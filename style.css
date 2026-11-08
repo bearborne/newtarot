@@ -1,14 +1,19 @@
 :root {
   --bg: #15131c;
+  --panel: #1f1b29;
   --ink: #e9e2d3;
   --muted: #a79f8f;
   --gold: #c9a96e;
-  --card-back: #2a2436;
   --card-front: #efe7d6;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  /* The back of every card. Put your own picture here to replace it,
+     e.g. url("cards/back.jpg") */
+  --card-back: url("card-back.svg");
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
@@ -17,135 +22,330 @@ html, body {
   color: var(--ink);
   font-family: var(--serif);
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-main {
+button { font: inherit; color: inherit; cursor: pointer; }
+
+.screen {
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   padding:
-    calc(env(safe-area-inset-top) + 40px)
+    calc(env(safe-area-inset-top) + 12px)
     16px
-    calc(env(safe-area-inset-bottom) + 40px);
+    calc(env(safe-area-inset-bottom) + 16px);
 }
 
-/* ── The card ─────────────────────────────── */
+/* ── Buttons ──────────────────────────────── */
 
-.card {
-  width: min(64vw, 300px);
-  aspect-ratio: 7 / 12;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  cursor: pointer;
-  perspective: 1200px;
-  flex-shrink: 0;
-}
-
-.card-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-  transition: transform 0.7s cubic-bezier(.3, .7, .2, 1);
-}
-
-.card.flipped .card-inner { transform: rotateY(180deg); }
-
-.face {
-  position: absolute;
-  inset: 0;
-  border-radius: 14px;
-  overflow: hidden;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
-}
-
-.back {
-  background: var(--card-back);
-  border: 1px solid rgba(201, 169, 110, .5);
-  outline: 1px solid rgba(201, 169, 110, .25);
-  outline-offset: -10px;
-  color: var(--gold);
-  display: grid;
-  place-items: center;
-}
-.back svg { width: 70%; }
-
-.front {
-  background: var(--card-front);
-  transform: rotateY(180deg);
-}
-.front img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Shown when a card has no picture yet */
-.placeholder {
-  position: absolute;
-  inset: 10px;
-  border: 1px solid #b59a68;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  text-align: center;
-  color: #3a3226;
-  font-size: 1.3rem;
-}
-
-/* ── Text under the card ──────────────────── */
-
-.hint {
-  margin-top: 24px;
-  color: var(--muted);
-  font-style: italic;
-  transition: opacity .3s;
-}
-.hint.hidden { opacity: 0; }
-
-.reading {
-  max-width: 34rem;
-  width: 100%;
-  text-align: center;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .5s, transform .5s;
-  pointer-events: none;
-}
-.reading.show { opacity: 1; transform: none; pointer-events: auto; }
-
-.reading h1 {
-  margin: 4px 0 12px;
-  font-weight: normal;
-  font-size: 1.8rem;
-  color: var(--gold);
-  letter-spacing: .02em;
-}
-.reading p {
-  margin: 0 0 1em;
-  font-size: 1.1rem;
-  line-height: 1.55;
-  text-align: left;
-}
-
-.again {
-  margin-top: 12px;
-  padding: 12px 28px;
-  font: inherit;
+.pill {
+  padding: 12px 26px;
   font-size: 1.05rem;
   color: var(--gold);
   background: transparent;
   border: 1px solid rgba(201, 169, 110, .6);
   border-radius: 999px;
+}
+.pill:active { background: rgba(201, 169, 110, .12); }
+
+.link {
+  padding: 8px 4px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+.bar #spreadName { color: var(--gold); font-size: 1.1rem; }
+.bar-space { width: 80px; }
+.bar .link { width: 80px; text-align: left; }
+
+/* ── Cards (shared) ───────────────────────── */
+
+.cback {
+  background: #2a2436 var(--card-back) center / cover no-repeat;
+  border-radius: 7px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .45);
+}
+
+.cface {
+  position: relative;
+  background: var(--card-front);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.cface img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Shown when a card has no picture yet */
+.placeholder {
+  position: absolute;
+  inset: 6%;
+  border: 1px solid #b59a68;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  text-align: center;
+  color: #3a3226;
+  line-height: 1.2;
+}
+
+/* A card that can turn over */
+.tcard {
+  width: 100%;
+  height: 100%;
+  perspective: 900px;
   cursor: pointer;
 }
-.again:active { background: rgba(201, 169, 110, .12); }
+.tcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform .75s cubic-bezier(.3, .7, .2, 1);
+}
+.tcard.flipped .tcard-inner { transform: rotateY(180deg); }
+.tcard .face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.tcard .cface { transform: rotateY(180deg); box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
+.tcard .placeholder { font-size: clamp(.62rem, 2.6vw, .9rem); }
+
+/* ── 1. Choose a spread ───────────────────── */
+
+.home-head { text-align: center; margin: 28px 0 24px; }
+.home-head h1 {
+  margin: 0;
+  font-weight: normal;
+  font-size: 2.4rem;
+  color: var(--gold);
+  letter-spacing: .04em;
+}
+.home-head p { margin: 6px 0 0; color: var(--muted); font-style: italic; }
+
+.spread-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+}
+.spread-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid rgba(201, 169, 110, .25);
+  border-radius: 14px;
+  text-align: left;
+}
+.spread-btn:active { border-color: rgba(201, 169, 110, .7); }
+.spread-name { flex: 1; font-size: 1.15rem; }
+.mini-row { display: flex; gap: 3px; }
+.mini-row i {
+  width: 11px;
+  height: 19px;
+  border-radius: 2px;
+  border: 1px solid var(--gold);
+  background: rgba(201, 169, 110, .15);
+}
+
+/* ── 2. The table ─────────────────────────── */
+
+.slots {
+  --w: 120px;
+  --gap: 14px;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 10px var(--gap);
+  margin: 8px auto 0;
+  max-width: calc(var(--w) * var(--cols) + var(--gap) * (var(--cols) - 1));
+}
+.slots[data-count="1"] { --w: min(44vw, 180px); --cols: 1; }
+.slots[data-count="2"] { --w: min(38vw, 160px); --cols: 2; }
+.slots[data-count="3"] { --w: min(27vw, 140px); --cols: 3; }
+.slots[data-count="4"] { --w: min(30vw, 120px); --cols: 2; }
+.slots[data-count="5"] { --w: min(26vw, 110px); --cols: 3; --gap: 10px; }
+/* Wider screens: four cards fit in one row */
+@media (min-width: 700px) {
+  .slots[data-count="4"] { --cols: 4; }
+}
+
+.slot { width: var(--w); text-align: center; }
+.slot-card {
+  aspect-ratio: 4 / 7;
+  border-radius: 7px;
+  border: 1px dashed rgba(201, 169, 110, .3);
+}
+.slot-card:has(.tcard) { border-color: transparent; }
+.slot-label {
+  margin-top: 6px;
+  font-size: .85rem;
+  color: var(--muted);
+}
+
+.hint {
+  min-height: 1.4em;
+  margin: 12px 0 4px;
+  text-align: center;
+  color: var(--muted);
+  font-style: italic;
+  transition: opacity .3s;
+}
+.hint.dim { opacity: 0; }
+
+.deck-area {
+  --fw: 64px;
+  --fh: 112px;
+  position: relative;
+  height: 200px;
+  flex-shrink: 0;
+}
+.deck, .fan-card {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  width: var(--fw);
+  height: var(--fh);
+  margin-left: calc(var(--fw) / -2);
+}
+.deck { cursor: pointer; }
+.deck .cback {
+  position: absolute;
+  inset: 0;
+  transition: transform .2s;
+}
+.deck:active .cback:last-child { transform: translateY(-3px); }
+
+.fan-card {
+  transform-origin: 50% 300%;
+  transform: rotate(var(--a));
+  transition: transform .2s;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .fan-card:hover { transform: rotate(var(--a)) translateY(-14px); }
+}
+
+.flyer { position: fixed; z-index: 20; pointer-events: none; }
+
+#newBtn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── 3. The card window ───────────────────── */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(10, 8, 15, .78);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.quick-box {
+  width: 100%;
+  max-width: 340px;
+  max-height: 100%;
+  overflow: auto;
+  padding: 22px 20px 12px;
+  background: var(--panel);
+  border: 1px solid rgba(201, 169, 110, .3);
+  border-radius: 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.quick-card {
+  width: min(46vw, 170px);
+  aspect-ratio: 4 / 7;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+}
+.quick-card .placeholder, .details-card .placeholder { font-size: 1.05rem; }
+
+.pos-label {
+  margin: 16px 0 0;
+  font-size: .78rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .8;
+}
+.pos-question {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-style: italic;
+}
+.quick-box h2, .details-body h2 {
+  margin: 6px 0 8px;
+  font-weight: normal;
+  font-size: 1.6rem;
+  color: var(--gold);
+}
+.quick-text p, .details-text p {
+  margin: 0 0 .9em;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+.quick-text { margin-bottom: 8px; }
+.empty-note { color: var(--muted); font-style: italic; }
+#quickClose { margin-top: 6px; }
+
+/* ── 4. The details window ────────────────── */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  background: var(--bg);
+  padding:
+    calc(env(safe-area-inset-top) + 12px)
+    16px
+    calc(env(safe-area-inset-bottom) + 32px);
+  -webkit-user-select: text;
+  user-select: text;
+}
+.details-body {
+  max-width: 36rem;
+  margin: 0 auto;
+  text-align: center;
+}
+.details-card {
+  width: min(52vw, 220px);
+  aspect-ratio: 4 / 7;
+  margin: 8px auto 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+}
+.details-text { text-align: left; margin-top: 12px; }

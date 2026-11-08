@@ -4,19 +4,34 @@
 
 1. Put each card's picture in the **cards** folder (JPG or PNG, upright, roughly 7 wide by 12 tall).
    Simple file names without spaces are safest, like `the-fool.jpg`.
-2. Open **cards.js** in Notepad and add a block for each card:
+   All 78 cards already have the original 1909 Rider-Waite-Smith pictures by Pamela Colman Smith
+   (public domain, from Wikimedia Commons). To use a different picture, replace the file with one
+   of the same name.
+2. Open **cards.js** in Notepad. All 78 cards are already there; fill in each one:
 
    ```js
    {
      name: "The Fool",
      image: "cards/the-fool.jpg",
-     text: `What the card means.
+     short: `A line or two, shown when the card is turned over.`,
+     details: `The longer page, shown under "More about this card".
 
    A second paragraph.`,
    },
    ```
 
-   Keep the comma after each `}`. A card with no picture yet shows its name on a plain face.
+   Keep the comma after each `}`. To add more cards (like the Minor Arcana), copy a whole block.
+   A card with no picture yet shows its name on a plain face.
+
+## Spreads and their questions
+
+Open **spreads.js**. Each spread has one line per card position, with a `label` (shown under the card)
+and a `question` (shown in the card's window). Fill in the questions when you have them.
+
+## The card back
+
+The back is the picture `card-back.svg`. To use your own art, put it in the cards folder and change
+the `--card-back` line near the top of **style.css**, e.g. `url("cards/back.jpg")`.
 
 ## Trying it on the PC
 
