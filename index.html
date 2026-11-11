@@ -26,6 +26,7 @@
       <p>Choose a spread</p>
     </header>
     <div class="spread-list" id="spreadList"></div>
+    <button class="pill browse-entry" id="browseBtn">Browse the cards</button>
   </section>
 
   <!-- 2. The table: shuffle, pick, turn -->
@@ -51,27 +52,41 @@
       <p class="pos-label" id="quickPos"></p>
       <p class="pos-question" id="quickQuestion"></p>
       <h2 id="quickName"></h2>
+      <div class="tags" id="quickTags"></div>
       <div class="quick-text" id="quickText"></div>
       <button class="pill" id="moreBtn">More about this card</button>
       <button class="link" id="quickClose">Close</button>
     </div>
   </div>
 
-  <!-- 4. The details window -->
-  <div class="sheet" id="details" hidden>
+  <!-- 4. The details window is built by app.js each time it opens -->
+
+  <!-- 5. Browse the cards -->
+  <div class="sheet" id="browse" hidden>
     <header class="bar">
-      <button class="link" id="detailsBack">‹ Back</button>
+      <button class="link" id="browseBack">‹ Back</button>
+      <span class="bar-title">The cards</span>
+      <span class="bar-space"></span>
     </header>
-    <div class="details-body">
-      <div class="details-card" id="detailsCard"></div>
-      <p class="pos-label" id="detailsPos"></p>
-      <p class="pos-question" id="detailsQuestion"></p>
-      <h2 id="detailsName"></h2>
-      <div class="details-text" id="detailsText"></div>
+    <div class="browse-body">
+      <div class="tag-head" id="tagHead" hidden>
+        <div id="tagHeadBox"></div>
+        <div id="tagHeadMeaning"></div>
+        <button class="link" id="tagClear">Show all cards</button>
+      </div>
+      <div id="browseFilters">
+        <div class="chips" id="suitChips"></div>
+        <div class="tags all-tags" id="allTags"></div>
+      </div>
+      <div class="grid" id="grid"></div>
     </div>
   </div>
 
+  <!-- The little window a golden tag opens -->
+  <div class="tag-tip" id="tagTip" hidden></div>
+
   <script src="cards.js"></script>
+  <script src="tags.js"></script>
   <script src="spreads.js"></script>
   <script src="app.js"></script>
 </body>

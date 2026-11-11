@@ -45,7 +45,8 @@ function fillText(box, text, emptyNote) {
 }
 
 // The face of a card: its picture, or its name if it has none yet.
-function cardFace(card) {
+// small = use the little picture from cards/small (for the card list).
+function cardFace(card, small) {
   const f = el("div", "cface");
   const placeholder = () => {
     const p = el("div", "placeholder");
@@ -55,8 +56,18 @@ function cardFace(card) {
   if (card.image) {
     const img = new Image();
     img.alt = card.name;
-    img.src = card.image;
-    img.onerror = () => img.replaceWith(placeholder());
+    img.decoding = "async";
+    if (small) {
+      img.loading = "lazy";
+      img.src = card.image.replace(/^cards\//, "cards/small/");
+      img.onerror = () => {
+        img.onerror = () => img.replaceWith(placeholder());
+        img.src = card.image;
+      };
+    } else {
+      img.src = card.image;
+      img.onerror = () => img.replaceWith(placeholder());
+    }
     f.append(img);
   } else {
     f.append(placeholder());
@@ -219,6 +230,7 @@ async function pick(fanCard) {
 
   const slot = S.slots[S.picked++];
   slot.card = CARDS[+fanCard.dataset.card];
+  preload(slot.card);   // start loading the picture now, so it's ready to turn
   const allPicked = S.picked === S.n;
   if (allPicked) S.phase = "busy";
   else {
@@ -322,6 +334,12 @@ function showPosition(i, labelEl, questionEl) {
   questionEl.hidden = !pos.question;
 }
 
+function fillTags(box, card) {
+  box.innerHTML = "";
+  (card.tags || []).forEach((id) => box.append(tagBox(id)));
+  box.hidden = !box.children.length;
+}
+
 function openQuick(i) {
   openIndex = i;
   const card = S.slots[i].card;
@@ -330,6 +348,7 @@ function openQuick(i) {
   $("quickCard").firstChild.style.height = "100%";
   showPosition(i, $("quickPos"), $("quickQuestion"));
   $("quickName").textContent = card.name;
+  fillTags($("quickTags"), card);
   fillText($("quickText"), card.short, "Add a short meaning for this card in cards.js.");
 
   $("quick").hidden = false;
@@ -347,22 +366,15 @@ async function closeQuick() {
 
 $("quickClose").addEventListener("click", closeQuick);
 $("quick").addEventListener("click", (e) => { if (e.target === $("quick")) closeQuick(); });
-$("moreBtn").addEventListener("click", () => openDetails(openIndex));
+$("moreBtn").addEventListener("click", () => openDetails(S.slots[openIndex].card, openIndex));
 
-// ── 4. The details window ───────────────────────────────
+// ── Windows that slide up over everything ───────────────
 
-function openDetails(i) {
-  const card = S.slots[i].card;
-  $("detailsCard").innerHTML = "";
-  $("detailsCard").append(cardFace(card));
-  $("detailsCard").firstChild.style.height = "100%";
-  showPosition(i, $("detailsPos"), $("detailsQuestion"));
-  $("detailsName").textContent = card.name;
-  fillText($("detailsText"), card.details || card.short,
-    "Add the details for this card in cards.js.");
+let Z = 100;   // the newest window sits on top
 
-  const sheet = $("details");
+function slideIn(sheet) {
   sheet.hidden = false;
+  sheet.style.zIndex = ++Z;
   sheet.scrollTop = 0;
   sheet.animate(
     [{ transform: "translateY(100%)" }, { transform: "none" }],
@@ -370,13 +382,203 @@ function openDetails(i) {
   );
 }
 
-$("detailsBack").addEventListener("click", async () => {
-  const sheet = $("details");
-  await sheet.animate(
+function slideOut(sheet) {
+  hideTip();
+  return sheet.animate(
     [{ transform: "none" }, { transform: "translateY(100%)" }],
     { duration: 300, easing: "ease-in" }
   ).finished;
-  sheet.hidden = true;
+}
+
+// ── 4. The details window ───────────────────────────────
+// posIndex = the card's place in the reading, or null from the card list.
+
+function openDetails(card, posIndex) {
+  const sheet = el("div", "sheet details");
+  const bar = el("header", "bar");
+  const back = el("button", "link", "‹ Back");
+  bar.append(back);
+
+  const body = el("div", "details-body");
+  const pic = el("div", "details-card");
+  const face = cardFace(card);
+  face.style.height = "100%";
+  pic.append(face);
+  body.append(pic);
+
+  if (posIndex != null && S) {
+    const label = el("p", "pos-label");
+    const question = el("p", "pos-question");
+    showPosition(posIndex, label, question);
+    body.append(label, question);
+  }
+  body.append(el("h2", "", card.name));
+  const tags = el("div", "tags");
+  fillTags(tags, card);
+  const text = el("div", "details-text");
+  fillText(text, card.details || card.short, "Add the details for this card in cards.js.");
+  body.append(tags, text);
+
+  sheet.append(bar, body);
+  document.body.append(sheet);
+  slideIn(sheet);
+  back.addEventListener("click", async () => {
+    await slideOut(sheet);
+    sheet.remove();
+  });
+}
+
+// ── Tags: the golden boxes ──────────────────────────────
+
+const canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
+const tip = $("tagTip");
+
+function tagInfo(id) {
+  return TAGS[id] || { name: id, meaning: "" };
+}
+
+function cardsWithTag(id) {
+  return CARDS.filter((c) => (c.tags || []).includes(id));
+}
+
+function countText(n) {
+  return n === 1 ? "1 card" : `${n} cards`;
+}
+
+// With a mouse: hover shows the meaning, click shows the cards.
+// On a phone: tap shows the meaning with a button to see the cards.
+function tagBox(id) {
+  const b = el("button", "tag", tagInfo(id).name);
+  if (canHover) {
+    b.addEventListener("mouseenter", () => showTip(b, id, false));
+    b.addEventListener("mouseleave", hideTip);
+    b.addEventListener("click", () => { hideTip(); openBrowse(id); });
+  } else {
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!tip.hidden && tip.dataset.tag === id) hideTip();
+      else showTip(b, id, true);
+    });
+  }
+  return b;
+}
+
+function showTip(anchor, id, withButton) {
+  const t = tagInfo(id);
+  const n = cardsWithTag(id).length;
+  tip.innerHTML = "";
+  tip.dataset.tag = id;
+  tip.append(el("div", "tip-name", t.name));
+  const meaning = el("div", "tip-meaning");
+  fillText(meaning, t.meaning, "Add this tag's meaning in tags.js.");
+  tip.append(meaning);
+  if (withButton) {
+    const go = el("button", "pill small", `Show all ${countText(n)}`);
+    go.addEventListener("click", () => { hideTip(); openBrowse(id); });
+    tip.append(go);
+  } else {
+    tip.append(el("p", "tip-hint", `Click to see all ${countText(n)}`));
+  }
+  tip.hidden = false;
+
+  const r = anchor.getBoundingClientRect();
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  const left = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 12));
+  let top = r.bottom + 8;
+  if (top + h > innerHeight - 12) top = r.top - h - 8;
+  tip.style.left = `${left}px`;
+  tip.style.top = `${Math.max(12, top)}px`;
+}
+
+function hideTip() {
+  tip.hidden = true;
+  tip.dataset.tag = "";
+}
+
+document.addEventListener("click", (e) => {
+  if (!tip.hidden && !tip.contains(e.target)) hideTip();
+});
+document.addEventListener("scroll", (e) => { if (e.target !== tip) hideTip(); }, true);
+
+// ── 5. Browse the cards ─────────────────────────────────
+
+const SUITS = ["All", "Major Arcana", "Wands", "Cups", "Swords", "Pentacles"];
+const B = { suit: "All", tag: null };
+
+function suitOf(card) {
+  if (CARDS.indexOf(card) < 22) return "Major Arcana";
+  return card.name.split(" of ")[1] || "Other";
+}
+
+SUITS.forEach((s) => {
+  const c = el("button", "chip", s === "Major Arcana" ? "Major" : s);
+  c.dataset.suit = s;
+  c.addEventListener("click", () => { B.suit = s; renderBrowse(); });
+  $("suitChips").append(c);
+});
+
+function renderBrowse() {
+  const tagged = B.tag != null;
+  $("tagHead").hidden = !tagged;
+  $("browseFilters").hidden = tagged;
+
+  if (tagged) {
+    const t = tagInfo(B.tag);
+    $("tagHeadBox").innerHTML = "";
+    const box = el("span", "tag big", t.name);
+    $("tagHeadBox").append(box);
+    fillText($("tagHeadMeaning"), t.meaning, "");
+    $("tagHeadMeaning").hidden = !t.meaning;
+  } else {
+    [...$("suitChips").children].forEach((c) =>
+      c.classList.toggle("on", c.dataset.suit === B.suit));
+    $("allTags").innerHTML = "";
+    Object.keys(TAGS).forEach((id) => $("allTags").append(tagBox(id)));
+    $("allTags").hidden = !$("allTags").children.length;
+  }
+
+  const list = tagged
+    ? cardsWithTag(B.tag)
+    : CARDS.filter((c) => B.suit === "All" || suitOf(c) === B.suit);
+
+  const grid = $("grid");
+  grid.innerHTML = "";
+  list.forEach((card) => {
+    const b = el("button", "grid-card");
+    const pic = el("div", "grid-pic");
+    const face = cardFace(card, true);
+    face.style.height = "100%";
+    pic.append(face);
+    b.append(pic, el("div", "grid-name", card.name));
+    b.addEventListener("click", () => openDetails(card, null));
+    grid.append(b);
+  });
+  if (!list.length) grid.append(el("p", "empty-note", "No cards have this tag yet."));
+}
+
+function openBrowse(tag = null) {
+  hideTip();
+  const browse = $("browse");
+  B.tag = tag;
+  renderBrowse();
+  if (browse.hidden) {
+    slideIn(browse);
+  } else {
+    // Already open: close the windows on top of it and show the new list.
+    const z = +browse.style.zIndex;
+    document.querySelectorAll(".sheet.details").forEach((s) => {
+      if (+s.style.zIndex > z) s.remove();
+    });
+    browse.scrollTop = 0;
+  }
+}
+
+$("browseBtn").addEventListener("click", () => { B.suit = "All"; openBrowse(null); });
+$("tagClear").addEventListener("click", () => { B.tag = null; renderBrowse(); });
+$("browseBack").addEventListener("click", async () => {
+  const browse = $("browse");
+  await slideOut(browse);
+  browse.hidden = true;
 });
 
 // Lets the app open without internet once it has been visited.

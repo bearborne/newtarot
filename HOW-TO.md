@@ -23,6 +23,15 @@
    Keep the comma after each `}`. To add more cards (like the Minor Arcana), copy a whole block.
    A card with no picture yet shows its name on a plain face.
 
+## Tags (the golden boxes)
+
+Open **tags.js**. Each tag has an id (one lowercase word), the name on the box and its meaning.
+To give a card a tag, put the id in that card's `tags` line in cards.js, e.g. `tags: ["dawnbringer"],`
+— several tags go in the same brackets, separated by commas.
+
+On a computer, hovering over a tag shows its meaning and clicking it lists every card with that tag.
+On the phone, tapping shows the meaning with a button to list the cards.
+
 ## Spreads and their questions
 
 Open **spreads.js**. Each spread has one line per card position, with a `label` (shown under the card)
