@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Tarot</title>
+  <title>Cards of Bearborne</title>
 
   <!-- Makes it open full screen, like an app, from the iPhone Home Screen -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Tarot">
+  <meta name="apple-mobile-web-app-title" content="Bearborne">
   <meta name="theme-color" content="#15131c">
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon-512.png">
@@ -22,11 +22,12 @@
   <!-- 1. Choose a spread -->
   <section class="screen" id="home">
     <header class="home-head">
-      <h1>Tarot</h1>
+      <h1>Cards of Bearborne</h1>
       <p>Choose a spread</p>
     </header>
     <div class="spread-list" id="spreadList"></div>
     <button class="pill browse-entry" id="browseBtn">Browse the cards</button>
+    <div class="options" id="options"></div>
   </section>
 
   <!-- 2. The table: shuffle, pick, turn -->
@@ -52,6 +53,7 @@
       <p class="pos-label" id="quickPos"></p>
       <p class="pos-question" id="quickQuestion"></p>
       <h2 id="quickName"></h2>
+      <p class="reversed-note" id="quickReversed" hidden>Reversed</p>
       <div class="tags" id="quickTags"></div>
       <div class="quick-text" id="quickText"></div>
       <button class="pill" id="moreBtn">More about this card</button>

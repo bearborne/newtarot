@@ -8,6 +8,25 @@ const FAN_MAX = 22;     // most cards shown in the fan to pick from
 
 let S = null;           // the reading in progress
 
+// ── Options (remembered on this device) ─────────────────
+
+const OPTIONS = [
+  { id: "tags",      name: "Tags",           note: "Show the golden tag boxes" },
+  { id: "court",     name: "Court cards",    note: "Add the Pages and Knights to the deck" },
+  { id: "reversals", name: "Reversed cards", note: "Cards can come out upside down" },
+];
+const SET = { tags: false, court: false, reversals: false };
+try { Object.assign(SET, JSON.parse(localStorage.getItem("tarot-options")) || {}); } catch {}
+
+function saveOptions() {
+  try { localStorage.setItem("tarot-options", JSON.stringify(SET)); } catch {}
+}
+
+// The cards in play: the Pages and Knights only when Court cards is on.
+function activeDeck() {
+  return CARDS.filter((c) => SET.court || !c.court);
+}
+
 // ── Helpers ─────────────────────────────────────────────
 
 function el(tag, cls, text) {
@@ -46,8 +65,8 @@ function fillText(box, text, emptyNote) {
 
 // The face of a card: its picture, or its name if it has none yet.
 // small = use the little picture from cards/small (for the card list).
-function cardFace(card, small) {
-  const f = el("div", "cface");
+function cardFace(card, small, reversed) {
+  const f = el("div", reversed ? "cface reversed" : "cface");
   const placeholder = () => {
     const p = el("div", "placeholder");
     p.append(el("span", "", card.name));
@@ -101,6 +120,30 @@ SPREADS.forEach((spread) => {
   $("spreadList").append(b);
 });
 
+// The on/off switches under the spreads.
+function applyOptions() {
+  document.body.classList.toggle("no-tags", !SET.tags);
+}
+
+OPTIONS.forEach((o) => {
+  const row = el("label", "option");
+  const text = el("span", "option-text");
+  text.append(el("span", "option-name", o.name), el("span", "option-note", o.note));
+  const box = el("input");
+  box.type = "checkbox";
+  box.className = "switch";
+  box.checked = !!SET[o.id];
+  box.addEventListener("change", () => {
+    SET[o.id] = box.checked;
+    saveOptions();
+    applyOptions();
+    hideTip();
+  });
+  row.append(text, box);
+  $("options").append(row);
+});
+applyOptions();
+
 function showHome() {
   S = null;
   $("table").hidden = true;
@@ -115,11 +158,12 @@ $("newBtn").addEventListener("click", showHome);
 
 function startReading(spread) {
   const n = spread.positions.length;
-  if (CARDS.length < n) {
-    alert(`This spread needs ${n} cards, but cards.js only has ${CARDS.length}.`);
+  const deck = activeDeck();
+  if (deck.length < n) {
+    alert(`This spread needs ${n} cards, but the deck only has ${deck.length}.`);
     return;
   }
-  S = { spread, n, slots: [], picked: 0, revealed: 0, phase: "shuffle" };
+  S = { spread, n, deck, slots: [], picked: 0, revealed: 0, phase: "shuffle" };
 
   $("home").hidden = true;
   $("table").hidden = false;
@@ -134,16 +178,16 @@ function startReading(spread) {
     const box = el("div", "slot-card");
     s.append(box, el("div", "slot-label", pos.label));
     slots.append(s);
-    S.slots.push({ box, card: null, tcard: null, flipped: false, i });
+    S.slots.push({ box, card: null, reversed: false, tcard: null, flipped: false, i });
   });
 
-  const deck = $("deck");
-  deck.innerHTML = "";
-  deck.hidden = false;
+  const pile = $("deck");
+  pile.innerHTML = "";
+  pile.hidden = false;
   for (let i = 0; i < DECK_LOOK; i++) {
     const c = el("div", "cback");
     c.style.transform = pileOffset(i);
-    deck.append(c);
+    pile.append(c);
   }
   $("fan").innerHTML = "";
   $("hint").textContent = "Tap the deck to shuffle";
@@ -166,7 +210,7 @@ $("deck").addEventListener("click", async () => {
   await squareUp();
   if (S !== reading) return;   // left the table mid-shuffle
 
-  S.order = shuffledOrder(CARDS.length);
+  S.order = shuffledOrder(S.deck.length);
   await fanOut();
   S.phase = "pick";
   setHint(S.n === 1 ? "Pick a card" : `Pick ${S.n} cards`);
@@ -200,7 +244,7 @@ function squareUp() {
 
 // Spread the cards out in an arc, face down.
 async function fanOut() {
-  const count = Math.min(FAN_MAX, CARDS.length);
+  const count = Math.min(FAN_MAX, S.deck.length);
   const width = Math.min(48, count * 4);
   const fan = $("fan");
   fan.innerHTML = "";
@@ -229,7 +273,8 @@ async function pick(fanCard) {
   fanCard.dataset.taken = "1";
 
   const slot = S.slots[S.picked++];
-  slot.card = CARDS[+fanCard.dataset.card];
+  slot.card = S.deck[+fanCard.dataset.card];
+  slot.reversed = SET.reversals && rand(2) === 1;
   preload(slot.card);   // start loading the picture now, so it's ready to turn
   const allPicked = S.picked === S.n;
   if (allPicked) S.phase = "busy";
@@ -242,7 +287,7 @@ async function pick(fanCard) {
   const t = el("div", "tcard");
   const inner = el("div", "tcard-inner");
   const back = el("div", "face cback");
-  const face = cardFace(slot.card);
+  const face = cardFace(slot.card, false, slot.reversed);
   face.classList.add("face");
   inner.append(back, face);
   t.append(inner);
@@ -342,12 +387,13 @@ function fillTags(box, card) {
 
 function openQuick(i) {
   openIndex = i;
-  const card = S.slots[i].card;
+  const { card, reversed } = S.slots[i];
   $("quickCard").innerHTML = "";
-  $("quickCard").append(cardFace(card));
+  $("quickCard").append(cardFace(card, false, reversed));
   $("quickCard").firstChild.style.height = "100%";
   showPosition(i, $("quickPos"), $("quickQuestion"));
   $("quickName").textContent = card.name;
+  $("quickReversed").hidden = !reversed;
   fillTags($("quickTags"), card);
   fillText($("quickText"), card.short, "Add a short meaning for this card in cards.js.");
 
@@ -366,7 +412,7 @@ async function closeQuick() {
 
 $("quickClose").addEventListener("click", closeQuick);
 $("quick").addEventListener("click", (e) => { if (e.target === $("quick")) closeQuick(); });
-$("moreBtn").addEventListener("click", () => openDetails(S.slots[openIndex].card, openIndex));
+$("moreBtn").addEventListener("click", () => openDetails(S.slots[openIndex].card, openIndex, S.slots[openIndex].reversed));
 
 // ── Windows that slide up over everything ───────────────
 
@@ -393,7 +439,7 @@ function slideOut(sheet) {
 // ── 4. The details window ───────────────────────────────
 // posIndex = the card's place in the reading, or null from the card list.
 
-function openDetails(card, posIndex) {
+function openDetails(card, posIndex, reversed) {
   const sheet = el("div", "sheet details");
   const bar = el("header", "bar");
   const back = el("button", "link", "‹ Back");
@@ -401,7 +447,7 @@ function openDetails(card, posIndex) {
 
   const body = el("div", "details-body");
   const pic = el("div", "details-card");
-  const face = cardFace(card);
+  const face = cardFace(card, false, reversed);
   face.style.height = "100%";
   pic.append(face);
   body.append(pic);
@@ -413,6 +459,7 @@ function openDetails(card, posIndex) {
     body.append(label, question);
   }
   body.append(el("h2", "", card.name));
+  if (reversed) body.append(el("p", "reversed-note", "Reversed"));
   const tags = el("div", "tags");
   fillTags(tags, card);
   const text = el("div", "details-text");
@@ -438,7 +485,7 @@ function tagInfo(id) {
 }
 
 function cardsWithTag(id) {
-  return CARDS.filter((c) => (c.tags || []).includes(id));
+  return activeDeck().filter((c) => (c.tags || []).includes(id));
 }
 
 function countText(n) {
@@ -518,6 +565,7 @@ SUITS.forEach((s) => {
 });
 
 function renderBrowse() {
+  if (!SET.tags) B.tag = null;
   const tagged = B.tag != null;
   $("tagHead").hidden = !tagged;
   $("browseFilters").hidden = tagged;
@@ -539,7 +587,7 @@ function renderBrowse() {
 
   const list = tagged
     ? cardsWithTag(B.tag)
-    : CARDS.filter((c) => B.suit === "All" || suitOf(c) === B.suit);
+    : activeDeck().filter((c) => B.suit === "All" || suitOf(c) === B.suit);
 
   const grid = $("grid");
   grid.innerHTML = "";

@@ -1,6 +1,6 @@
 {
-  "name": "Tarot",
-  "short_name": "Tarot",
+  "name": "Cards of Bearborne",
+  "short_name": "Bearborne",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#15131c",

@@ -5,6 +5,8 @@
 //    name    – the card's title
 //    image   – the picture file inside the "cards" folder
 //              (leave it as "" to show just the name)
+//    court   – true for the Pages and Knights: they are only in the
+//              deck when "Court cards" is turned on
 //    tags    – the card's tags, using the names from tags.js,
 //              e.g. ["dawnbringer", "crossroads"]
 //    short   – a line or two, shown when the card is first turned
@@ -249,6 +251,22 @@ const CARDS = [
     details: ``,
   },
   {
+    name: "Page of Wands",
+    image: "cards/page-of-wands.jpg",
+    court: true,
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
+    name: "Knight of Wands",
+    image: "cards/knight-of-wands.jpg",
+    court: true,
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
     name: "Queen of Wands",
     image: "cards/queen-of-wands.jpg",
     tags: ["temptress"],
@@ -332,6 +350,22 @@ const CARDS = [
     name: "Ten of Cups",
     image: "cards/ten-of-cups.jpg",
     tags: ["celebration", "companionship", "fulfillment"],
+    short: ``,
+    details: ``,
+  },
+  {
+    name: "Page of Cups",
+    image: "cards/page-of-cups.jpg",
+    court: true,
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
+    name: "Knight of Cups",
+    image: "cards/knight-of-cups.jpg",
+    court: true,
+    tags: [],
     short: ``,
     details: ``,
   },
@@ -423,6 +457,22 @@ const CARDS = [
     details: ``,
   },
   {
+    name: "Page of Swords",
+    image: "cards/page-of-swords.jpg",
+    court: true,
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
+    name: "Knight of Swords",
+    image: "cards/knight-of-swords.jpg",
+    court: true,
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
     name: "Queen of Swords",
     image: "cards/queen-of-swords.jpg",
     tags: [],
@@ -505,6 +555,22 @@ const CARDS = [
   {
     name: "Ten of Pentacles",
     image: "cards/ten-of-pentacles.jpg",
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
+    name: "Page of Pentacles",
+    image: "cards/page-of-pentacles.jpg",
+    court: true,
+    tags: [],
+    short: ``,
+    details: ``,
+  },
+  {
+    name: "Knight of Pentacles",
+    image: "cards/knight-of-pentacles.jpg",
+    court: true,
     tags: [],
     short: ``,
     details: ``,

@@ -32,6 +32,14 @@ To give a card a tag, put the id in that card's `tags` line in cards.js, e.g. `t
 On a computer, hovering over a tag shows its meaning and clicking it lists every card with that tag.
 On the phone, tapping shows the meaning with a button to list the cards.
 
+## The switches on the home screen
+
+Under the spreads there are three switches. All start off, and each phone or computer remembers its own choice.
+
+- **Tags** shows the golden tag boxes.
+- **Court cards** adds the Pages and Knights to the deck. In cards.js they're marked `court: true`.
+- **Reversed cards** lets a card come out upside down, about half the time. The card window then says "Reversed".
+
 ## Spreads and their questions
 
 Open **spreads.js**. Each spread has one line per card position, with a `label` (shown under the card)
