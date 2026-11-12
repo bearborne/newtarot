@@ -46,7 +46,8 @@ function el(tag, cls, text) {
 // A fair random whole number from 0 to n-1.
 function rand(n) {
   const a = new Uint32Array(1);
-  crypto.getRandomValues(a);
+  const limit = 2 ** 32 - (2 ** 32 % n);   // skip the uneven top end so every result is exactly as likely
+  do crypto.getRandomValues(a); while (a[0] >= limit);
   return a[0] % n;
 }
 
@@ -119,10 +120,10 @@ function setHint(text) {
 
 SPREADS.forEach((spread) => {
   const b = el("button", "spread-btn");
-  b.append(el("span", "spread-name", spread.name));
   const row = el("span", "mini-row");
+  row.dataset.n = spread.positions.length;   // 4 and 5 stack in two rows
   spread.positions.forEach(() => row.append(el("i")));
-  b.append(row);
+  b.append(row, el("span", "spread-name", spread.name));
   b.addEventListener("click", () => startReading(spread));
   $("spreadList").append(b);
 });
@@ -147,6 +148,7 @@ OPTIONS.forEach((o) => {
     SET[o.id] = box.checked;
     saveOptions();
     applyOptions();
+    if (o.id === "court") buildFloatDeck();
     hideTip();
   });
   row.append(text, box);
@@ -160,6 +162,7 @@ function syncOptions() {
   loadOptions();
   document.querySelectorAll("#options .switch").forEach((b) => { b.checked = SET[b.dataset.opt]; });
   applyOptions();
+  buildFloatDeck();
 }
 addEventListener("pageshow", syncOptions);
 
@@ -168,7 +171,202 @@ function showHome() {
   $("table").hidden = true;
   $("home").hidden = false;
   window.scrollTo(0, 0);
+  startSky();
 }
+
+// ── The home screen's night sky and floating deck ───────
+
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const homeShown = () => !$("home").hidden && !document.hidden;
+
+// Twinkling stars and gold dust drifting upward.
+const sky = { stars: [], dust: [], running: false };
+
+function sizeSky() {
+  const c = $("sky");
+  const r = Math.min(devicePixelRatio || 1, 2);
+  c.width = innerWidth * r;
+  c.height = innerHeight * r;
+  c.getContext("2d").setTransform(r, 0, 0, r, 0, 0);
+  const n = Math.round((innerWidth * innerHeight) / 9000);
+  sky.stars = Array.from({ length: Math.min(n, 140) }, () => ({
+    x: Math.random(), y: Math.random(),
+    s: Math.random() * 1.1 + 0.3, p: Math.random() * 6, v: 0.5 + Math.random(),
+  }));
+  sky.dust = Array.from({ length: Math.min(Math.round(n / 4), 30) }, () => ({
+    x: Math.random(), y: Math.random(),
+    s: Math.random() * 1.4 + 0.7, v: 0.00025 + Math.random() * 0.0004,
+  }));
+}
+
+function drawSky(t) {
+  const x = $("sky").getContext("2d");
+  const W = innerWidth, H = innerHeight;
+  x.clearRect(0, 0, W, H);
+  x.fillStyle = "#e9e2d3";
+  for (const s of sky.stars) {
+    x.globalAlpha = calm ? 0.6 : 0.2 + 0.8 * Math.abs(Math.sin(t / 1100 * s.v + s.p));
+    x.beginPath(); x.arc(s.x * W, s.y * H, s.s, 0, 7); x.fill();
+  }
+  if (!calm) {
+    x.fillStyle = "#e3c98f";
+    for (const d of sky.dust) {
+      d.y -= d.v;
+      if (d.y < -0.02) { d.y = 1.02; d.x = Math.random(); }
+      x.globalAlpha = 0.7 * Math.sin(Math.max(0, d.y) * Math.PI);
+      x.beginPath();
+      x.arc(d.x * W + Math.sin(t / 900 + d.x * 9) * 8, d.y * H, d.s, 0, 7);
+      x.fill();
+    }
+  }
+  x.globalAlpha = 1;
+}
+
+function startSky() {
+  if (sky.running || !homeShown()) return;
+  if (calm) { drawSky(0); return; }
+  sky.running = true;
+  requestAnimationFrame(function frame(t) {
+    if (!homeShown()) { sky.running = false; return; }   // rests while away
+    drawSky(t);
+    requestAnimationFrame(frame);
+  });
+}
+
+// The card of the day is drawn at random from the deck in play the
+// moment you reveal it (with Court cards and Reversed cards as set),
+// then kept until tomorrow.
+const FD_ANGLES = [-22, -11, 0, 11, 22];
+let fdBusy = false;
+
+function dayStamp() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+// Today's drawn card, or null if it hasn't been revealed yet today.
+// If a switch has since been turned off, it's drawn again.
+function todaysCard() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem("tarot-cotd")); } catch {}
+  if (!saved || saved.day !== dayStamp()) return null;
+  const card = activeDeck().find((c) => c.name === saved.name);
+  if (!card) return null;                      // a court card, now switched off
+  if (saved.reversed && !SET.reversals) return null;
+  return { card, reversed: !!saved.reversed };
+}
+
+function drawCardOfTheDay() {
+  const deck = activeDeck();
+  const pick = { card: deck[rand(deck.length)], reversed: SET.reversals && rand(2) === 1 };
+  try {
+    localStorage.setItem("tarot-cotd", JSON.stringify(
+      { day: dayStamp(), name: pick.card.name, reversed: pick.reversed }));
+  } catch {}
+  return pick;
+}
+
+function cotdName({ card, reversed }) {
+  return reversed ? `${card.name}, reversed` : card.name;
+}
+
+// Puts the drawn card's face on the middle card of the floating deck.
+function setFdFace(pick) {
+  const flip = $("floatDeck").children[2].querySelector(".fd-flip");
+  flip.querySelector(".cface")?.remove();
+  flip.append(cardFace(pick.card, true, pick.reversed));
+}
+
+function showCotdLabel(pick) {
+  $("cotd").textContent = `Card of the day · ${cotdName(pick)}`;
+  $("floatDeck").setAttribute("aria-label", `Card of the day: ${cotdName(pick)}`);
+}
+
+function buildFloatDeck() {
+  const box = $("floatDeck");
+  box.innerHTML = "";
+  FD_ANGLES.forEach((a, i) => {
+    const c = el("div", "fd-card");
+    c.style.setProperty("--a", `${a}deg`);
+    const bob = el("div", "fd-bob");
+    bob.style.animationDelay = `${-i * 0.45}s`;
+    const flip = el("div", "fd-flip");
+    flip.append(el("div", "cback"));
+    bob.append(flip);
+    c.append(bob);
+    box.append(c);
+  });
+  box.setAttribute("role", "button");
+  fdBusy = false;
+  const pick = todaysCard();
+  if (pick) {
+    setFdFace(pick);
+    box.children[2].classList.add("lift", "turned", "revealed");
+    showCotdLabel(pick);
+  } else {
+    box.setAttribute("aria-label", "Reveal card of the day");
+    $("cotd").textContent = "Reveal card of the day";
+  }
+}
+
+// A burst of sunlight: a bright glow, turning rays and flying sparks.
+function sunburst() {
+  const sun = el("div", "sun");
+  const glow = el("div", "sun-glow");
+  const rays = el("div", "sun-rays");
+  sun.append(rays, glow);
+  $("floatDeck").append(sun);
+  glow.animate(
+    [{ transform: "scale(0)", opacity: 1 }, { transform: "scale(5)", opacity: 1, offset: 0.35 }, { transform: "scale(9)", opacity: 0 }],
+    { duration: 1400, easing: "ease-out", fill: "forwards" }
+  );
+  rays.animate(
+    [{ transform: "scale(.2) rotate(0deg)", opacity: 0 }, { transform: "scale(1) rotate(25deg)", opacity: 1, offset: 0.3 }, { transform: "scale(1.5) rotate(70deg)", opacity: 0 }],
+    { duration: 1800, easing: "ease-out", fill: "forwards" }
+  );
+  for (let i = 0; i < 22; i++) {
+    const s = el("div", "sun-spark");
+    sun.append(s);
+    const a = (i / 22) * Math.PI * 2 + Math.random() * 0.3;
+    const r = 70 + Math.random() * 90;
+    s.animate(
+      [{ transform: "translate(0,0) scale(1)", opacity: 1 },
+       { transform: `translate(${Math.cos(a) * r}px, ${Math.sin(a) * r}px) scale(.3)`, opacity: 0 }],
+      { duration: 900 + Math.random() * 700, delay: 120, easing: "cubic-bezier(.1,.8,.3,1)", fill: "both" }
+    );
+  }
+  setTimeout(() => sun.remove(), 2000);
+}
+
+// First tap: the card rises, bursts in sunlight and turns over.
+// After that, a tap opens the card's page.
+async function revealCardOfTheDay() {
+  if (fdBusy) return;
+  const today = todaysCard();
+  if (today) { openDetails(today.card, null, today.reversed); return; }
+  fdBusy = true;
+  const pick = drawCardOfTheDay();
+  setFdFace(pick);
+  const mid = $("floatDeck").children[2];
+  const label = $("cotd");
+  label.classList.add("fade");
+  mid.classList.add("lift");
+  if (!calm) { await wait(350); sunburst(); await wait(250); }
+  mid.classList.add("turned", "revealed");
+  showCotdLabel(pick);
+  label.classList.remove("fade");
+  await wait(700);
+  fdBusy = false;
+}
+
+$("floatDeck").addEventListener("click", revealCardOfTheDay);
+$("cotd").addEventListener("click", revealCardOfTheDay);
+
+addEventListener("resize", () => { sizeSky(); if (calm) drawSky(0); });
+document.addEventListener("visibilitychange", startSky);
+sizeSky();
+buildFloatDeck();
+startSky();
 
 $("backBtn").addEventListener("click", showHome);
 $("newBtn").addEventListener("click", showHome);
@@ -407,16 +605,26 @@ function fillTags(box, card) {
   box.hidden = !box.children.length;
 }
 
-// The card's keywords, as one line: "trust · beginnings · freedom".
-function fillKeywords(box, card) {
-  box.textContent = (card.keywords || []).join(" · ");
+// Some cards have their own keywords and questions for when they're reversed;
+// the rest use the same ones both ways.
+const filled = (list) => (list || []).map((x) => String(x).trim()).filter(Boolean);
+const hasRevKeywords = (card) => filled(card.reversedKeywords).length > 0;
+const hasRevQuestions = (card) => filled(card.reversedQuestions).length > 0;
+const keywordsFor = (card, reversed) =>
+  reversed && hasRevKeywords(card) ? card.reversedKeywords : card.keywords;
+const questionsFor = (card, reversed) =>
+  reversed && hasRevQuestions(card) ? card.reversedQuestions : card.questions;
+
+// Keywords as one line: "trust · beginnings · freedom".
+function fillKeywords(box, words) {
+  box.textContent = filled(words).join(" · ");
   box.hidden = !box.textContent;
 }
 
 // The questions the card asks you.
-function fillQuestions(box, card) {
+function fillQuestions(box, questions) {
   box.innerHTML = "";
-  const qs = (card.questions || []).map((q) => q.trim()).filter(Boolean);
+  const qs = filled(questions);
   if (qs.length) {
     box.append(el("p", "asks-title", "The card asks"));
     const list = el("ul");
@@ -436,9 +644,10 @@ function openQuick(i) {
   $("quickName").textContent = card.name;
   $("quickReversed").hidden = !reversed;
   fillTags($("quickTags"), card);
-  fillKeywords($("quickKeywords"), card);
-  fillText($("quickText"), card.short, "Add a short description for this card in cards.js.");
-  fillQuestions($("quickAsks"), card);
+  fillKeywords($("quickKeywords"), keywordsFor(card, reversed));
+  const useReversed = reversed && (card.reversed || "").trim();
+  fillText($("quickText"), useReversed ? card.reversed : card.short, "Add a short description for this card in cards.js.");
+  fillQuestions($("quickAsks"), questionsFor(card, reversed));
 
   $("quick").hidden = false;
   $("quick").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
@@ -480,6 +689,41 @@ function slideOut(sheet) {
 }
 
 // ── 4. The details window ───────────────────────────────
+
+const CORR_LABELS = { astrology: "Astrology", element: "Element", number: "Number", kabbalah: "Kabbalah" };
+
+// The card's astrology, element, number and Kabbalah, as a small table.
+function correspondences(card) {
+  const box = el("dl", "corr");
+  const c = card.correspondences || {};
+  Object.keys(CORR_LABELS).forEach((k) => {
+    if (!c[k]) return;
+    box.append(el("dt", "", CORR_LABELS[k]), el("dd", "", c[k]));
+  });
+  box.hidden = !box.children.length;
+  return box;
+}
+
+// One side of the card, "Upright" or "Reversed": its meaning, plus its own
+// keywords and questions when the two sides have different ones.
+function meaning(card, rev) {
+  const box = el("div", "details-text meaning");
+  box.append(el("p", "asks-title", rev ? "Reversed" : "Upright"));
+  if (hasRevKeywords(card)) {
+    const k = el("p", "keywords");
+    fillKeywords(k, keywordsFor(card, rev));
+    box.append(k);
+  }
+  const t = el("div");
+  fillText(t, rev ? card.reversed : card.short, rev ? "" : "Add a short description for this card in cards.js.");
+  box.append(t);
+  if (hasRevQuestions(card)) {
+    const asks = el("div", "asks");
+    fillQuestions(asks, questionsFor(card, rev));
+    box.append(asks);
+  }
+  return box;
+}
 // posIndex = the card's place in the reading, or null from the card list.
 
 function openDetails(card, posIndex, reversed) {
@@ -505,13 +749,22 @@ function openDetails(card, posIndex, reversed) {
   if (reversed) body.append(el("p", "reversed-note", "Reversed"));
   const tags = el("div", "tags");
   fillTags(tags, card);
+  // Shared keywords sit under the name; separate ones go with each side.
   const keywords = el("p", "keywords");
-  fillKeywords(keywords, card);
-  const about = el("div", "details-text");
-  fillText(about, card.short, "Add a short description for this card in cards.js.");
-  const asks = el("div", "asks");
-  fillQuestions(asks, card);
-  body.append(tags, keywords, about, asks);
+  fillKeywords(keywords, hasRevKeywords(card) ? [] : card.keywords);
+  body.append(tags, keywords, correspondences(card));
+
+  // Upright and reversed meanings; the way the card fell comes first.
+  const upright = meaning(card, false);
+  const rev = (card.reversed || "").trim() ? meaning(card, true) : null;
+  if (reversed && rev) body.append(rev, upright);
+  else body.append(upright, ...(rev ? [rev] : []));
+
+  if (!hasRevQuestions(card)) {
+    const asks = el("div", "asks");
+    fillQuestions(asks, card.questions);
+    body.append(asks);
+  }
   if ((card.details || "").trim()) {
     const text = el("div", "details-text");
     fillText(text, card.details, "");

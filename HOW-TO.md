@@ -14,7 +14,9 @@
      name: "The Fool",
      image: "cards/the-fool.jpg",
      keywords: ["beginnings", "trust", "freedom"],
+     correspondences: { astrology: "Uranus", element: "Air", number: "0", kabbalah: "Aleph, path 11" },
      short: `A short description, shown when you tap a turned card.`,
+     reversed: `What the card means when it comes out upside down.`,
      questions: [
        `What are you ready to begin?`,
        `Where could a little more trust help you?`,
@@ -25,9 +27,18 @@
    },
    ```
 
-   Every card already has keywords, a short description and three questions, written to stay
-   neutral and encouraging rather than "good" or "bad". Change any of them as you like;
-   `details` is left empty for your own notes.
+   Every card already has keywords, correspondences, an upright and a reversed meaning and three
+   questions, written to stay neutral and encouraging rather than "good" or "bad". A reversed card
+   isn't the opposite of the upright one: its energy is turned inward, still forming or asking for
+   attention. Change any of them as you like; `details` is left empty for your own notes.
+
+   Where the upright keywords and questions don't fit a reversed card, the card also has
+   `reversedKeywords` and `reversedQuestions`, shown when it comes out upside down. Cards without
+   them use the same keywords and questions both ways. You can add them to any card.
+
+   The correspondences follow the Golden Dawn system: the Minor cards Two to Ten each rule ten
+   degrees of a sign (the Four of Cups is "Moon in Cancer"), the court cards rule a span of the
+   zodiac, and the Major cards have a planet or sign and a Hebrew letter. Leave one out to hide it.
 
    Keep the comma after each `}`. To add more cards (like the Minor Arcana), copy a whole block.
    A card with no picture yet shows its name on a plain face.

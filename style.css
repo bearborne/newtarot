@@ -141,7 +141,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ── 1. Choose a spread ───────────────────── */
 
-.home-head { text-align: center; margin: 28px 0 24px; }
+.home-head { text-align: center; margin: 28px 0 16px; }
 .home-head h1 {
   margin: 0;
   font-weight: normal;
@@ -149,40 +149,167 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--gold);
   letter-spacing: .04em;
 }
-.home-head p { margin: 6px 0 0; color: var(--muted); font-style: italic; }
+.home-sub { margin: 0 0 14px; text-align: center; color: var(--muted); font-style: italic; }
+
+/* The night sky behind the home screen */
+.sky {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#home > :not(.sky) { position: relative; }
+
+/* The floating deck above the spreads */
+.float-deck {
+  position: relative;
+  height: 128px;
+  width: 200px;
+  margin: 0 auto;
+  cursor: pointer;
+}
+.fd-card {
+  position: absolute;
+  left: 50%;
+  top: 22px;
+  width: 54px;
+  height: 92px;
+  margin-left: -27px;
+  transform-origin: 50% 150%;
+  transform: rotate(var(--a));
+  transition: transform .6s cubic-bezier(.3,.7,.3,1);
+}
+.fd-card.lift { transform: translateY(-16px) scale(1.12); z-index: 2; }
+.fd-bob { width: 100%; height: 100%; animation: fd-bob 3.2s ease-in-out infinite; }
+@keyframes fd-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.fd-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .7s ease;
+}
+.fd-card.turned .fd-flip { transform: rotateY(180deg); }
+.fd-flip > * {
+  position: absolute;
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.fd-flip > .cface { transform: rotateY(180deg); border-radius: 5px; overflow: hidden; }
+.fd-flip > .cface.reversed { transform: rotateY(180deg) rotate(180deg); }
+.fd-flip > .cback { border-radius: 5px; }
+.fd-card.revealed .fd-flip > .cface {
+  box-shadow: 0 0 14px 3px rgba(255, 214, 130, .55);
+}
+.cotd {
+  display: block;
+  margin: 0 auto 4px;
+  padding: 4px 12px;
+  background: none;
+  border: 0;
+  color: var(--gold);
+  font-size: .9rem;
+  font-style: italic;
+  letter-spacing: .02em;
+  transition: opacity .3s;
+}
+.cotd.fade { opacity: 0; }
+#home { overflow-x: clip; }
+
+/* The burst of sunlight when the card of the day is revealed */
+.sun {
+  position: absolute;
+  left: 50%;
+  top: 68px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.sun > * { position: absolute; border-radius: 50%; }
+.sun-glow {
+  width: 60px; height: 60px; margin: -30px;
+  background: radial-gradient(circle, #fffbe8 0%, #ffe39a 28%, rgba(255, 196, 90, .45) 52%, rgba(255, 180, 70, 0) 70%);
+}
+.sun-rays {
+  width: 340px; height: 340px; margin: -170px;
+  background: repeating-conic-gradient(rgba(255, 226, 150, .55) 0deg 5deg, rgba(255, 226, 150, 0) 5deg 20deg);
+  -webkit-mask: radial-gradient(circle, #000 12%, transparent 68%);
+  mask: radial-gradient(circle, #000 12%, transparent 68%);
+}
+.sun-spark {
+  width: 5px; height: 5px; margin: -2.5px;
+  background: #fff1c4;
+  box-shadow: 0 0 6px 2px rgba(255, 210, 120, .8);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-bob { animation: none; }
+  .fd-card, .fd-flip, .cotd { transition: none; }
+}
 
 .spread-list {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 7px;
   width: 100%;
   max-width: 26rem;
   margin: 0 auto;
 }
+/* Square boxes, five in a row: the little cards on top, the name below */
 .spread-btn {
+  width: calc((100% - 4 * 7px) / 5);
+  aspect-ratio: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px;
+  container-type: inline-size;   /* sizes inside are a share of the box's width */
   background: var(--panel);
   border: 1px solid rgba(201, 169, 110, .3);
   border-radius: 10px;
-  text-align: left;
+  text-align: center;
   transition: border-color .15s, background .15s;
 }
 .spread-btn:active { border-color: rgba(201, 169, 110, .8); background: #262132; }
 @media (hover: hover) {
   .spread-btn:hover { border-color: rgba(201, 169, 110, .65); background: #241f30; }
 }
-.spread-name { flex: 1; font-size: 1.05rem; }
-/* Little card backs showing how many cards the spread uses */
-.mini-row { display: flex; gap: 4px; }
+/* Every name the same size, one word per line, filling the box's width */
+.spread-name {
+  width: min-content;
+  font-size: .9rem;
+  font-size: 27cqi;
+  line-height: 1.05;
+}
+/* Little card backs showing how many cards the spread uses.
+   Four sit 2 over 2, five sit 2 over 3, every row centered. */
+.mini-row {
+  --w: 11cqi;
+  --g: 3cqi;
+  display: flex;
+  flex-wrap: wrap-reverse;   /* the shorter row goes on top */
+  justify-content: center;
+  align-content: center;
+  height: calc(2 * 17cqi + var(--g));   /* room for two rows in every box, so the names line up */
+  gap: 3px;
+  gap: var(--g);
+}
+.mini-row[data-n="4"] { width: calc(2 * var(--w) + var(--g)); }
+.mini-row[data-n="5"] { width: calc(3 * var(--w) + 2 * var(--g)); }
 .mini-row i {
-  width: 12px;
-  height: 20px;
+  width: 8px;
+  height: 13px;
+  width: var(--w);
+  height: 17cqi;
   border-radius: 2px;
   background: linear-gradient(160deg, #e2c88f, #a9864f);
-  box-shadow: inset 0 0 0 1.5px var(--panel), 0 0 0 1px #8a6d3b;
+  box-shadow: inset 0 0 0 1px var(--panel), 0 0 0 1px #8a6d3b;
 }
 
 /* ── 2. The table ─────────────────────────── */
@@ -359,6 +486,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--gold);
   opacity: .8;
 }
+.corr {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 10px 14px;
+  border: 1px solid rgba(201, 169, 110, .3);
+  border-radius: 8px;
+  text-align: left;
+  font-size: .92rem;
+}
+.corr dt {
+  color: var(--gold);
+  opacity: .8;
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  align-self: center;
+}
+.corr dd { margin: 0; }
+.meaning { width: 100%; }
+.meaning .asks-title { margin-top: 6px; }
 .asks ul { margin: 0; padding: 0 0 0 1.1em; }
 .asks li { margin: 0 0 .7em; line-height: 1.45; font-style: italic; }
 .empty-note { color: var(--muted); font-style: italic; }

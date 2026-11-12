@@ -21,10 +21,13 @@
 
   <!-- 1. Choose a spread -->
   <section class="screen" id="home">
+    <canvas class="sky" id="sky" aria-hidden="true"></canvas>
     <header class="home-head">
       <h1>Cards of Bearborne</h1>
-      <p>Choose a spread</p>
     </header>
+    <div class="float-deck" id="floatDeck"></div>
+    <button class="cotd" id="cotd">Reveal card of the day</button>
+    <p class="home-sub">Choose a spread</p>
     <div class="spread-list" id="spreadList"></div>
     <button class="pill browse-entry" id="browseBtn">Browse the cards</button>
     <div class="options" id="options"></div>
