@@ -13,12 +13,21 @@
    {
      name: "The Fool",
      image: "cards/the-fool.jpg",
-     short: `A line or two, shown when the card is turned over.`,
-     details: `The longer page, shown under "More about this card".
+     keywords: ["beginnings", "trust", "freedom"],
+     short: `A short description, shown when you tap a turned card.`,
+     questions: [
+       `What are you ready to begin?`,
+       `Where could a little more trust help you?`,
+     ],
+     details: `Your own longer notes, shown under "More about this card".
 
    A second paragraph.`,
    },
    ```
+
+   Every card already has keywords, a short description and three questions, written to stay
+   neutral and encouraging rather than "good" or "bad". Change any of them as you like;
+   `details` is left empty for your own notes.
 
    Keep the comma after each `}`. To add more cards (like the Minor Arcana), copy a whole block.
    A card with no picture yet shows its name on a plain face.
@@ -37,7 +46,7 @@ On the phone, tapping shows the meaning with a button to list the cards.
 Under the spreads there are three switches. All start off, and each phone or computer remembers its own choice.
 
 - **Tags** shows the golden tag boxes.
-- **Court cards** adds the Pages and Knights to the deck. In cards.js they're marked `court: true`.
+- **Court cards** adds the Pages, Knights, Queens and Kings to the deck. In cards.js they're marked `court: true`.
 - **Reversed cards** lets a card come out upside down, about half the time. The card window then says "Reversed".
 
 ## Spreads and their questions

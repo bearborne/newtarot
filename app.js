@@ -12,17 +12,24 @@ let S = null;           // the reading in progress
 
 const OPTIONS = [
   { id: "tags",      name: "Tags",           note: "Show the golden tag boxes" },
-  { id: "court",     name: "Court cards",    note: "Add the Pages and Knights to the deck" },
+  { id: "court",     name: "Court cards",    note: "Add the Pages, Knights, Queens and Kings" },
   { id: "reversals", name: "Reversed cards", note: "Cards can come out upside down" },
 ];
 const SET = { tags: false, court: false, reversals: false };
-try { Object.assign(SET, JSON.parse(localStorage.getItem("tarot-options")) || {}); } catch {}
+
+// Reads the saved switches. Only known switches, only true/false.
+function loadOptions() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem("tarot-options")) || {}; } catch {}
+  OPTIONS.forEach((o) => { SET[o.id] = saved[o.id] === true; });
+}
+loadOptions();
 
 function saveOptions() {
   try { localStorage.setItem("tarot-options", JSON.stringify(SET)); } catch {}
 }
 
-// The cards in play: the Pages and Knights only when Court cards is on.
+// The cards in play: the Pages, Knights, Queens and Kings only when Court cards is on.
 function activeDeck() {
   return CARDS.filter((c) => SET.court || !c.court);
 }
@@ -132,7 +139,10 @@ OPTIONS.forEach((o) => {
   const box = el("input");
   box.type = "checkbox";
   box.className = "switch";
-  box.checked = !!SET[o.id];
+  box.id = `opt-${o.id}`;
+  box.autocomplete = "off";   // stop the browser putting back old switch states
+  box.dataset.opt = o.id;
+  box.checked = SET[o.id];
   box.addEventListener("change", () => {
     SET[o.id] = box.checked;
     saveOptions();
@@ -143,6 +153,15 @@ OPTIONS.forEach((o) => {
   $("options").append(row);
 });
 applyOptions();
+
+// When the page is shown again (back button, reopened app), make the
+// switches match what is saved, so what you see is what is used.
+function syncOptions() {
+  loadOptions();
+  document.querySelectorAll("#options .switch").forEach((b) => { b.checked = SET[b.dataset.opt]; });
+  applyOptions();
+}
+addEventListener("pageshow", syncOptions);
 
 function showHome() {
   S = null;
@@ -206,7 +225,7 @@ $("deck").addEventListener("click", async () => {
   const reading = S;
   setHint("Shuffling…");
 
-  for (let round = 0; round < 3; round++) await riffle();
+  for (let round = 0; round < 2; round++) await riffle();
   await squareUp();
   if (S !== reading) return;   // left the table mid-shuffle
 
@@ -229,7 +248,7 @@ function riffle() {
         { transform: out, offset: 0.5 },
         { transform: pileOffset(i) },
       ],
-      { duration: 620, delay: (cards.length - i) * 22, easing: "ease-in-out" }
+      { duration: 220, delay: (cards.length - i) * 6, easing: "ease-in-out" }
     ).finished;
   }));
 }
@@ -238,7 +257,7 @@ function riffle() {
 function squareUp() {
   return $("deck").animate(
     [{ transform: "none" }, { transform: "translateY(-6px)" }, { transform: "none" }],
-    { duration: 260, easing: "ease-out" }
+    { duration: 100, easing: "ease-out" }
   ).finished;
 }
 
@@ -258,12 +277,12 @@ async function fanOut() {
     c.dataset.angle = a;
     c.animate(
       [{ transform: "rotate(0deg)" }, { transform: `rotate(${a}deg)` }],
-      { duration: 650, delay: i * 18, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" }
+      { duration: 380, delay: i * 8, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" }
     );
     c.addEventListener("click", () => pick(c));
     fan.append(c);
   }
-  await wait(650 + count * 18);
+  await wait(380 + count * 8);
 }
 
 // ── Pick ────────────────────────────────────────────────
@@ -359,10 +378,13 @@ async function turn(slot) {
     await wait(800);
     S.phase = "turn";
     if (S.revealed === S.n) {
-      setHint(S.n === 1 ? "Tap the card to read it again" : "Tap any card to read it again");
+      setHint(S.n === 1 ? "Tap the card to read it" : "Tap any card to read it");
       $("newBtn").hidden = false;
       $("newBtn").animate([{ opacity: 0 }, { opacity: 1 }], 400);
+    } else if (S.revealed === 1) {
+      setHint("Tap a turned card to read it");
     }
+    return;   // turning a card only shows it; tap it again to read it
   }
   openQuick(slot.i);
 }
@@ -385,6 +407,25 @@ function fillTags(box, card) {
   box.hidden = !box.children.length;
 }
 
+// The card's keywords, as one line: "trust · beginnings · freedom".
+function fillKeywords(box, card) {
+  box.textContent = (card.keywords || []).join(" · ");
+  box.hidden = !box.textContent;
+}
+
+// The questions the card asks you.
+function fillQuestions(box, card) {
+  box.innerHTML = "";
+  const qs = (card.questions || []).map((q) => q.trim()).filter(Boolean);
+  if (qs.length) {
+    box.append(el("p", "asks-title", "The card asks"));
+    const list = el("ul");
+    qs.forEach((q) => list.append(el("li", "", q)));
+    box.append(list);
+  }
+  box.hidden = !qs.length;
+}
+
 function openQuick(i) {
   openIndex = i;
   const { card, reversed } = S.slots[i];
@@ -395,7 +436,9 @@ function openQuick(i) {
   $("quickName").textContent = card.name;
   $("quickReversed").hidden = !reversed;
   fillTags($("quickTags"), card);
-  fillText($("quickText"), card.short, "Add a short meaning for this card in cards.js.");
+  fillKeywords($("quickKeywords"), card);
+  fillText($("quickText"), card.short, "Add a short description for this card in cards.js.");
+  fillQuestions($("quickAsks"), card);
 
   $("quick").hidden = false;
   $("quick").animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250 });
@@ -462,9 +505,18 @@ function openDetails(card, posIndex, reversed) {
   if (reversed) body.append(el("p", "reversed-note", "Reversed"));
   const tags = el("div", "tags");
   fillTags(tags, card);
-  const text = el("div", "details-text");
-  fillText(text, card.details || card.short, "Add the details for this card in cards.js.");
-  body.append(tags, text);
+  const keywords = el("p", "keywords");
+  fillKeywords(keywords, card);
+  const about = el("div", "details-text");
+  fillText(about, card.short, "Add a short description for this card in cards.js.");
+  const asks = el("div", "asks");
+  fillQuestions(asks, card);
+  body.append(tags, keywords, about, asks);
+  if ((card.details || "").trim()) {
+    const text = el("div", "details-text");
+    fillText(text, card.details, "");
+    body.append(text);
+  }
 
   sheet.append(bar, body);
   document.body.append(sheet);
