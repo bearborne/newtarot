@@ -584,6 +584,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
    card's pages alike. */
 .summary { text-align: center; }
 .summary-part, .summary-asks { margin-top: 18px; text-align: center; }
+/* LAYOUT RULE: the summary's sections sit in fixed places (see
+   openSummary): the left column (the reading, themes, number arcs), the
+   right column (pictures, symbolism, elements, hidden card…), then the
+   questions below, the reading's on the left and each card's on the
+   right. On a phone (or a narrow wide screen) it all stacks in that order. */
+@media (min-width: 1340px) {
+  .summary-page .col-main {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 28px;
+    align-items: start;
+  }
+  .summary-page .sum-col + .sum-col {
+    padding-left: 28px;
+    border-left: 1px solid rgba(201, 169, 110, .14);
+  }
+  .summary-page .sum-asks {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px;
+    align-items: start;
+  }
+  .summary-page .sum-asks > .asks { margin: 0; }
+}
 .summary-part ul { margin: 0; padding: 0; list-style: none; }
 .summary-part li { margin: 0 0 .8em; line-height: 1.45; }
 .summary-part li strong {
@@ -592,15 +617,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--gold);
 }
 .summary-part li strong::first-letter { text-transform: uppercase; }
-.summary-meaning > p:not(.asks-title) { margin: 0 0 .8em; font-size: 1.05rem; line-height: 1.55; }
-.summary-meaning .asks { margin-top: 10px; }
 .summary-asks { margin-top: 18px; }
 .summary-q { display: block; margin-top: 3px; color: var(--muted); font-size: .92rem; }
+/* The reading's arc (one line over the whole spread) and, under each
+   card's place, how it follows the card before it. */
+.summary-arc { margin: -4px 0 12px; font-style: italic; color: var(--ink); font-size: 1.05rem; }
+/* the shared words' tiles, right under the reading's title */
+.summary-part > .tiles:not(:last-child) { margin-bottom: 16px; }
+.summary-link { display: block; margin: 0 0 2px; color: var(--muted); font-size: .8rem; }
 /* The summary's reading text in the screen-reading font; the gold
    headings keep the deck's own serif. */
 .summary-page .col-main li > span,
 .summary-page .col-main .summary-q,
-.summary-meaning > p:not(.asks-title) { font-family: var(--read); }
+.summary-page .col-main .summary-link,
+.summary-arc { font-family: var(--read); }
 
 /* The lens buttons: each reads the spread from another angle */
 .lens-title {
@@ -1277,17 +1307,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .summary-page .related-label { font-size: .7rem; }
   .summary-page .summary-kw { font-size: .9rem; }
 
-  .summary-page .col-main {
-    columns: 2 360px;
-    column-gap: 56px;
-    column-rule: 1px solid rgba(201, 169, 110, .14);
-    padding-top: 0;
-  }
-  /* the lens's own wrapper shouldn't hold its two sections together */
-  .summary-page .col-main > div:not(.asks) { display: contents; }
+  .summary-page .col-main { padding-top: 0; }
   .summary-page .summary-part,
   .summary-page .summary-asks {
-    break-inside: avoid;
     margin: 0 0 28px;
     padding-top: 22px;
     border-top: 1px solid rgba(201, 169, 110, .28);
@@ -1295,7 +1317,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .summary-page .summary-asks {
     padding: 18px 22px 8px;
     border-top: 0;
-    display: inline-block; /* keeps it in one column */
   }
   .summary-page .asks-title {
     margin-bottom: 14px;
@@ -1314,7 +1335,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .summary-page .summary-part li:first-child { padding-top: 0; }
   .summary-page .summary-part li strong { font-size: 1.25rem; margin-bottom: 4px; }
   .summary-page .summary-q { font-size: 1rem; margin-top: 6px; }
-  .summary-page .summary-meaning > p:not(.asks-title) { font-size: 1.2rem; line-height: 1.7; margin-bottom: .9em; }
+  .summary-page .summary-arc { font-size: 1.2rem; }
+  .summary-page .summary-link { font-size: .95rem; margin-bottom: 4px; }
   .summary-page .summary-asks li { font-size: 1.2rem; font-family: var(--read); }
 
   /* The card's page, laid out like the summary: the card big on the
@@ -1383,14 +1405,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 /* ── Threads: a tapped pattern lights the cards it runs through ── */
-.thread-hint {
-  padding-bottom: 6px;
-  margin: 18px 0 0;
-  font-size: .85rem;
-  font-style: italic;
-  color: var(--muted);
-  text-align: center;
-}
 .summary-page .summary-part li[data-cards] {
   cursor: pointer;
   padding-inline: 10px;
@@ -1505,38 +1519,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .sheet.has-strip { padding-bottom: calc(env(safe-area-inset-bottom) + 130px); }
 
-/* The hidden card: the Major card the spread's numbers add up to. */
-.hidden-face {
-  display: block;
-  width: 76px;
-  aspect-ratio: 4 / 7;
-  margin: 2px auto 12px;
-  padding: 0;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  overflow: hidden;
-  box-shadow: 0 0 0 1px rgba(201, 169, 110, .5), 0 0 22px rgba(201, 169, 110, .28);
-}
 @media (prefers-reduced-motion: reduce) {
   .thread-strip { animation: none; }
 }
 
 /* ── Tiles: counts and per-card states, seen at a glance ──
-   LAYOUT RULE: every tile is the same width in every section (a third
-   of the column, or a card's width when per card), every row the same
-   height, every line one line. Rows are balanced by app.js (--per):
-   4 tiles sit 2 + 2, 5 sit 3 + 2, never one left alone. */
+   LAYOUT RULE: every row fills the full column width (1 or 2 tiles
+   stretch just like 3 or 4), every row the same height, every line one
+   line. Rows are balanced by app.js (--per): 4 tiles sit 2 + 2, 5 sit
+   3 + 2, never one left alone. */
 .tiles {
   --per: 3;
   display: grid;
-  grid-template-columns: repeat(var(--per), calc((100% - 12px) / 3));
+  grid-template-columns: repeat(var(--per), minmax(0, 1fr));
   grid-auto-rows: 1fr;
-  justify-content: center;
   gap: 6px;
 }
 .tiles.per-card { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
-.tiles.wide { grid-template-columns: repeat(var(--per), minmax(0, 1fr)); }
 .tile {
   min-width: 0;
   display: flex;
@@ -1554,6 +1553,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   -webkit-tap-highlight-color: transparent;
 }
 .tile[data-cards] { cursor: pointer; }
+/* Mirrors & tensions: pairs of card names may run to two lines */
+.tiles.wrap .tile-main, .tiles.wrap .tile-note, .tiles.wrap .tile-top { white-space: normal; line-height: 1.25; }
 .tile-top, .tile-main, .tile-note {
   max-width: 100%;
   overflow: hidden;
