@@ -50,6 +50,33 @@ function saveOptions() {
   try { localStorage.setItem("tarot-options", JSON.stringify(SET)); } catch {}
 }
 
+// How a picked card travels from the fan to the spread. "surprise"
+// picks one of the quick flashes at random for each card pulled.
+const PICK_FX = [
+  { id: "surprise", name: "Surprise me" },
+  { id: "rune",     name: "Rune flash" },
+  { id: "star",     name: "Star streak" },
+  { id: "ember",    name: "Ember blink" },
+  { id: "bolt",     name: "Gold lightning" },
+  { id: "moon",     name: "Moon blink" },
+  { id: "classic",  name: "Slow flight" },
+];
+let pickFx = "surprise";
+try {
+  const saved = localStorage.getItem("tarot-pickfx");
+  if (PICK_FX.some((p) => p.id === saved)) pickFx = saved;
+} catch {}
+
+// A fresh one for every card pulled, never the same one twice in a row
+// (also across readings).
+let lastPickFx = null;
+function nextPickFx() {
+  if (pickFx !== "surprise") return pickFx;
+  const quick = PICK_FX.filter((p) => p.id !== "surprise" && p.id !== "classic" && p.id !== lastPickFx);
+  lastPickFx = quick[rand(quick.length)].id;
+  return lastPickFx;
+}
+
 // The cards in play: the Pages, Knights, Queens and Kings only when Court cards is on.
 function activeDeck() {
   return CARDS.filter((c) => SET.court || !c.court);
@@ -325,6 +352,26 @@ OPTIONS.forEach((o) => {
   $("options").append(row);
 });
 applyOptions();
+
+// Pick magic: one button that steps through the styles.
+{
+  const row = el("div", "option");
+  const text = el("span", "option-text");
+  text.append(el("span", "option-name", "Pick magic"), el("span", "option-note", "How a picked card flies to the spread"));
+  const btn = el("button", "pick-fx-btn");
+  const show = () => { btn.textContent = PICK_FX.find((p) => p.id === pickFx).name; };
+  show();
+  btn.setAttribute("aria-label", "Pick magic: tap to change");
+  btn.addEventListener("click", () => {
+    const i = PICK_FX.findIndex((p) => p.id === pickFx);
+    pickFx = PICK_FX[(i + 1) % PICK_FX.length].id;
+    try { localStorage.setItem("tarot-pickfx", pickFx); } catch {}
+    show();
+    hideTip();
+  });
+  row.append(text, btn);
+  $("options").append(row);
+}
 
 // When the page is shown again (back button, reopened app), make the
 // switches match what is saved, so what you see is what is used.
@@ -697,23 +744,33 @@ async function pick(fanCard) {
   });
   document.body.append(flyer);
   fanCard.style.visibility = "hidden";
-  if (!calm) magicFlight(flyer, fanCard);
 
-  // Each card lifts a little differently on its way: higher or lower, a touch of tilt.
-  const lift = vary(26, 0.3), tilt = a + wobble(4), peak = vary(0.2, 0.25);
-  await flyer.animate(
-    [
-      { transform: `rotate(${a}deg)` },
-      { transform: `translate(${wobble(6)}px, -${lift}px) rotate(${tilt}deg) scale(${vary(1.08, 0.03)})`, offset: peak },
-      { transform: `translate(${dx}px, ${dy}px) scale(${scale})` },
-    ],
-    { duration: 700, easing: "cubic-bezier(.4,0,.2,1)" }
-  ).finished;
+  const fx = calm ? "classic" : nextPickFx();
+  if (fx === "classic") {
+    if (!calm) magicFlight(flyer, fanCard);
+    // Each card lifts a little differently on its way: higher or lower, a touch of tilt.
+    const lift = vary(26, 0.3), tilt = a + wobble(4), peak = vary(0.2, 0.25);
+    await flyer.animate(
+      [
+        { transform: `rotate(${a}deg)` },
+        { transform: `translate(${wobble(6)}px, -${lift}px) rotate(${tilt}deg) scale(${vary(1.08, 0.03)})`, offset: peak },
+        { transform: `translate(${dx}px, ${dy}px) scale(${scale})` },
+      ],
+      { duration: 700, easing: "cubic-bezier(.4,0,.2,1)" }
+    ).finished;
+  } else {
+    // One of the quick flashes (pickfx.js).
+    await PickFX.play(fx, {
+      flyer, card: t,
+      from: { x: cx, y: cy, w, h, a },
+      to: { x: cx + dx, y: cy + dy, w: target.width, h: target.height },
+    });
+  }
   t.style.visibility = "";
   flyer.remove();
   slot.placed = true;   // it can be turned over now, even before the rest are picked
   if (S !== reading) return;
-  if (!calm) magicLand(slot.i);
+  if (fx === "classic" && !calm) magicLand(slot.i);
 
   if (allPicked) {
     await wait(150);
@@ -1167,7 +1224,7 @@ function frameHash(k) {
 
 const FRAME_BASE = {
   Fire: ["#4a0a02", "#a82a08"], Water: ["#123a6e", "#2a6bb8"],
-  Earth: ["#3b2817", "#5e4126"], Air: ["#36578a", "#6e8fbf"],
+  Earth: ["#070608", "#151214"], Air: ["#36578a", "#6e8fbf"],   // earth is near black, so its gems stand out
 };
 const FRAME_GEMS = ["#5fd08a", "#f0c45a", "#b58cf0", "#5ab8e0", "#e86a7a"];
 
@@ -1195,12 +1252,19 @@ function flameNoise(x, y, t) {
     + 0.18 * Math.sin(x * 0.07 + y * 0.24 + t / 260 + 4.1);
 }
 
+// The frames are an accent on the card's edge, not a second picture:
+// everything (band, flames, waves, stones) is drawn at half its full size,
+// it reaches only halfway into the white margin, and it's a little see-through.
+const FRAME_SCALE = 0.5;
+const FRAME_OPACITY = 0.8;
+
 // g = the card's box { x, y, w, h }; age = ms since the frame began.
 function drawFrame(x, g, el, t, age, inset = FRAME_INSET) {
-  const B = Math.max(7, g.w * 0.085), o = B * 0.3, r = 6;
+  const B = Math.max(3.5, g.w * 0.085 * FRAME_SCALE), o = B * 0.3, r = 6;
   // i is the frame's depth inside the card on the sides; each side's own
   // depth comes from FRAME_INSET, and every effect is spread to fill it.
-  const ins = { t: g.w * inset.t, r: g.w * inset.r, b: g.w * inset.b, l: g.w * inset.l };
+  const k0 = g.w * FRAME_SCALE;
+  const ins = { t: k0 * inset.t, r: k0 * inset.r, b: k0 * inset.b, l: k0 * inset.l };
   const i = ins.i = ins.l, d = (o - i) / 2, inner = frameInner(g, ins);
   const pp = 2 * (g.w + g.h);
   const a = Math.min(1, age / FRAME_FADE), fade = a * a * (3 - 2 * a);
@@ -1213,7 +1277,7 @@ function drawFrame(x, g, el, t, age, inset = FRAME_INSET) {
   x.beginPath();
   x.rect(g.x - B * 6, g.y - B * 8, g.w + B * 12, g.h + B * 8 + o + 1);
   x.clip();
-  x.globalAlpha = fade;
+  x.globalAlpha = fade * FRAME_OPACITY;
   const base = FRAME_BASE[el];
   const grad = x.createLinearGradient(g.x, g.y, g.x + g.w, g.y + g.h);
   grad.addColorStop(0, base[1]); grad.addColorStop(0.5, base[0]); grad.addColorStop(1, base[1]);
@@ -1225,7 +1289,7 @@ function drawFrame(x, g, el, t, age, inset = FRAME_INSET) {
     // A line of heat glowing along the inner edge…
     x.save();
     x.shadowColor = "rgba(255, 120, 30, .9)";
-    x.shadowBlur = 14;
+    x.shadowBlur = 7;
     x.strokeStyle = "rgba(255, 170, 60, .7)";
     x.lineWidth = B * 0.25;
     x.beginPath();
@@ -1255,7 +1319,7 @@ function drawFrame(x, g, el, t, age, inset = FRAME_INSET) {
       if (!li) {
         x.save();
         x.shadowColor = "rgba(255, 90, 20, .95)";
-        x.shadowBlur = 16;
+        x.shadowBlur = 8;
         x.fill();
         x.restore();
       } else x.fill();
@@ -1296,7 +1360,7 @@ function drawFrame(x, g, el, t, age, inset = FRAME_INSET) {
       const px = b1x + tx * B * 1.2 + nx * hc, py = b1y + ty * B * 1.2 + ny * hc;
       const ex = b1x + tx * B * 1.7, ey = b1y + ty * B * 1.7;
       x.save();
-      x.globalAlpha = fade * ca;
+      x.globalAlpha = fade * FRAME_OPACITY * ca;
       x.fillStyle = "rgba(90, 170, 235, .95)";
       x.beginPath();
       x.moveTo(b1x, b1y);
@@ -2157,23 +2221,20 @@ function openSummary(entries, title, magic = false) {
   });
   side.append(row);
 
-  // One lens at a time, stepped through with arrows (or the dots below),
-  // and the parts that change with it.
+  // Every lens as its own button; the chosen one is lit, and the parts
+  // that change with it follow.
   const lenses = lensesFor(entries);
   const lensBox = el("div", "lens");
-  const prev = el("button", "nav-btn", "‹"), next = el("button", "nav-btn", "›");
-  prev.setAttribute("aria-label", "Previous way of reading");
-  next.setAttribute("aria-label", "Next way of reading");
-  const lensName = el("p", "lens-name");
-  lensName.setAttribute("aria-live", "polite");
-  lensBox.append(prev, lensName, next);
-  const dots = el("div", "lens-dots");
+  lensBox.setAttribute("role", "group");
+  lensBox.setAttribute("aria-label", "Read it as");
   const lensPart = el("div");
   let current = 0;
   const render = () => {
     const lens = lenses[current];
-    if (lens) lensName.textContent = lens.name;
-    [...dots.children].forEach((c, i) => c.classList.toggle("on", i === current));
+    [...lensBox.children].forEach((c, i) => {
+      c.classList.toggle("on", i === current);
+      c.setAttribute("aria-pressed", i === current ? "true" : "false");
+    });
     entries.forEach((e, i) => { placeLabels[i].textContent = lens ? placeName(lens, i, e) : e.label || ""; });
     lensPart.innerHTML = "";
     if (!lens) return;
@@ -2191,15 +2252,11 @@ function openSummary(entries, title, magic = false) {
     if (pairs.length) lensPart.append(listSection("How the cards meet", pairs));
   };
   lenses.forEach((lens, i) => {
-    const d = el("button");
-    d.setAttribute("aria-label", lens.name);
-    d.addEventListener("click", () => { current = i; render(); });
-    dots.append(d);
+    const b = el("button", "lens-btn", lens.name);
+    b.addEventListener("click", () => { current = i; render(); });
+    lensBox.append(b);
   });
-  const step = (k) => { current = (current + k + lenses.length) % lenses.length; render(); };
-  prev.addEventListener("click", () => step(-1));
-  next.addEventListener("click", () => step(1));
-  if (lenses.length > 1) side.append(el("p", "lens-title", "Read it as"), lensBox, dots);
+  if (lenses.length > 1) side.append(el("p", "lens-title", "Read it as"), lensBox);
   main.append(lensPart);
   render();
 
@@ -2241,99 +2298,32 @@ function appearWithMagic(sheet, body) {
   sheet.style.zIndex = ++Z;
   sheet.scrollTop = 0;
   sheet.animate(
-    [{ opacity: 0, filter: "blur(8px) brightness(1.6)", transform: "scale(1.04)" },
-     { opacity: 1, filter: "blur(0) brightness(1)", transform: "none" }],
-    { duration: 700, easing: "cubic-bezier(.2,.8,.2,1)" }
+    [{ opacity: 0, filter: "brightness(1.8)", transform: "scale(1.04)" },
+     { opacity: 1, filter: "brightness(1)", transform: "none" }],
+    { duration: 450, easing: "cubic-bezier(.2,.8,.2,1)" }
   );
   [...body.querySelectorAll(".col-side > *, .col-main > *")].forEach((part, i) => part.animate(
-    [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }],
-    { duration: 550, delay: 250 + i * 80, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }
+    [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }],
+    { duration: 420, delay: 120 + Math.min(i, 10) * 40, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }
   ));
 }
 
-// Before the summary opens: the runes around every card spiral in to the
-// middle of the screen, form a turning circle, and flare into light; the
-// summary appears inside that light.
+// Before the summary opens: the cards' light converges in the middle of
+// the screen and flashes, and the summary appears inside that flash
+// (PickFX.summon in pickfx.js, in the same style as the pick magic).
 let summoning = false;
 function summonSummary(open) {
   if (calm) { open(false); return; }
   if (summoning) return;   // already on its way
   summoning = true;
-  const cv = el("canvas", "summon");
-  const r = Math.min(devicePixelRatio || 1, 2);
-  const W = innerWidth, H = innerHeight;
-  cv.width = W * r; cv.height = H * r;
-  document.body.append(cv);
-  const ctx = cv.getContext("2d");
-  ctx.setTransform(r, 0, 0, r, 0, 0);
-  ctx.lineCap = "round";
-  const centre = { x: W / 2, y: H * 0.45 };
-  const R = Math.min(W, H) * 0.3;
-  // Runes start on the rings around the turned cards (from History, there are none on screen).
-  const motes = [];
+  // The turned cards on the table; from the History there are none on screen.
   const onTable = S && !$("table").hidden;
-  (onTable ? S.slots : []).forEach((s, i) => {
+  const points = onTable ? S.slots.map((s, i) => {
     const g = cardGeom(i);
-    for (let k = 0; k < 6; k++) {
-      const a = (k / 6) * Math.PI * 2 + i + wobble(0.3);
-      motes.push({ x: g.x + Math.cos(a) * (g.rx + 20), y: g.y + Math.sin(a) * (g.ry + 20),
-        rn: rand(RUNES.length), delay: Math.max(0, i * 60 + k * 25 + wobble(20)), end: (motes.length * 2.4) % (Math.PI * 2) });
-    }
-  });
-  const start = performance.now();
-  let opened = false;
-  requestAnimationFrame(function frame(now) {
-    const t = now - start;
-    ctx.clearRect(0, 0, W, H);
-    // 1. The runes spiral in toward the circle (0–750ms).
-    motes.forEach((m) => {
-      const p = Math.min(1, Math.max(0, (t - m.delay) / 700));
-      const e = 1 - Math.pow(1 - p, 3);
-      const ang = m.end + (1 - e) * 2.2 + t / 900;
-      const tx = centre.x + Math.cos(ang) * R, ty = centre.y + Math.sin(ang) * R;
-      const x = m.x + (tx - m.x) * e, y = m.y + (ty - m.y) * e;
-      const a = Math.min(1, p * 3) * (t < 1050 ? 1 : Math.max(0, 1 - (t - 1050) / 300));
-      ctx.fillStyle = `rgba(255, 226, 170, ${0.35 * a})`;
-      ctx.beginPath();
-      ctx.arc(x, y, 3, 0, Math.PI * 2);
-      ctx.fill();
-      rune(ctx, RUNES[m.rn], x, y, 12, ang + Math.PI / 2, 0.9 * a);
-    });
-    // 2. The circle forms and turns (400–1100ms).
-    const c = Math.min(1, Math.max(0, (t - 400) / 500));
-    if (c > 0) {
-      ctx.save();
-      ctx.shadowColor = "rgba(255, 210, 130, .9)";
-      ctx.shadowBlur = 12;
-      ctx.strokeStyle = `rgba(255, 228, 175, ${0.7 * c})`;
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.arc(centre.x, centre.y, R * 1.06, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * c);
-      ctx.stroke();
-      ctx.setLineDash([2, 6]);
-      ctx.lineDashOffset = -t / 30;
-      ctx.beginPath();
-      ctx.arc(centre.x, centre.y, R * 0.8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * c);
-      ctx.stroke();
-      ctx.restore();
-    }
-    // 3. It flares into light that fills the screen (850–1250ms)…
-    const f = Math.min(1, Math.max(0, (t - 850) / 400));
-    if (f > 0) {
-      const fade = t < 1300 ? 1 : Math.max(0, 1 - (t - 1300) / 550);
-      const rad = Math.hypot(W, H) * (0.15 + f);
-      const g = ctx.createRadialGradient(centre.x, centre.y, 0, centre.x, centre.y, rad);
-      g.addColorStop(0, `rgba(255, 236, 200, ${0.95 * fade})`);
-      g.addColorStop(0.5, `rgba(255, 214, 150, ${0.75 * f * fade})`);
-      g.addColorStop(1, `rgba(40, 30, 50, ${0.6 * f * fade})`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, W, H);
-    }
-    // …and the summary opens inside the light, which then clears.
-    if (!opened && t >= 1150) { opened = true; open(true); }
-    if (t < 1900) requestAnimationFrame(frame);
-    else { cv.remove(); summoning = false; }
-  });
+    return { x: g.x, y: g.y, w: g.rx * 2, h: g.ry * 2 };
+  }) : [];
+  const total = PickFX.summon(points, () => open(true));
+  setTimeout(() => { summoning = false; }, total);
 }
 
 // The reading on the table, as summary entries.
@@ -2648,7 +2638,7 @@ function detailsItem(card, reversed = false, label = "", question = "") {
 // it on the left (staying in view), and its meanings and the rest on the
 // right. On a phone the two simply stack.
 function detailsBody({ card, reversed, label, question }) {
-  const body = el("div", "details-body two-col");
+  const body = el("div", "details-body two-col card-page");
   const side = el("div", "col-side"), main = el("div", "col-main");
   body.append(side, main);
   const pic = el("div", "details-card");

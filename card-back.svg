@@ -1,13 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 120">
-  <rect width="70" height="120" fill="#2a2436"/>
-  <rect x="4" y="4" width="62" height="112" rx="3" fill="none" stroke="#c9a96e" stroke-opacity=".45" stroke-width=".6"/>
-  <g transform="translate(35 60) scale(.6)" fill="#c9a96e" stroke="#c9a96e">
-    <circle r="30" fill="none" stroke-width="1"/>
-    <circle r="36" fill="none" stroke-width=".5" stroke-dasharray="1 3"/>
-    <path d="M8 -18 A20 20 0 1 0 8 18 A16 16 0 1 1 8 -18 Z" stroke="none"/>
-    <g stroke="none">
-      <circle cy="-44" r="1.6"/><circle cy="44" r="1.6"/>
-      <circle cx="-44" r="1.6"/><circle cx="44" r="1.6"/>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 245">
+  <!-- The back of every card: a zodiac wheel with a compass star at its
+       heart. To use your own picture instead, change the card-back setting
+       at the top of style.css. -->
+  <rect width="140" height="245" fill="#2a2436"/>
+  <rect x="5" y="5" width="130" height="235" rx="4" fill="none" stroke="#c9a96e" stroke-opacity=".55" stroke-width=".9"/>
+  <rect x="9" y="9" width="122" height="227" rx="2.5" fill="none" stroke="#c9a96e" stroke-opacity=".4" stroke-width=".6" stroke-dasharray="1 3"/>
+  <g fill="none" stroke="#c9a96e" stroke-linecap="round">
+    <circle cx="70" cy="122.5" r="52" stroke-width=".6" stroke-dasharray="1 3.2" stroke-opacity=".7"/>
+    <circle cx="70" cy="122.5" r="46" stroke-width="1.1"/>
+    <circle cx="70" cy="122.5" r="35" stroke-width=".9"/>
+    <g stroke-width=".8"><path d="M105.00 122.50L116.00 122.50"/><path d="M100.31 140.00L109.84 145.50"/><path d="M87.50 152.81L93.00 162.34"/><path d="M70.00 157.50L70.00 168.50"/><path d="M52.50 152.81L47.00 162.34"/><path d="M39.69 140.00L30.16 145.50"/><path d="M35.00 122.50L24.00 122.50"/><path d="M39.69 105.00L30.16 99.50"/><path d="M52.50 92.19L47.00 82.66"/><path d="M70.00 87.50L70.00 76.50"/><path d="M87.50 92.19L93.00 82.66"/><path d="M100.31 105.00L109.84 99.50"/></g>
   </g>
+  <g fill="#c9a96e"><circle cx="109.12" cy="132.98" r="1.5"/><circle cx="98.64" cy="151.14" r="1.5"/><circle cx="80.48" cy="161.62" r="1.5"/><circle cx="59.52" cy="161.62" r="1.5"/><circle cx="41.36" cy="151.14" r="1.5"/><circle cx="30.88" cy="132.98" r="1.5"/><circle cx="30.88" cy="112.02" r="1.5"/><circle cx="41.36" cy="93.86" r="1.5"/><circle cx="59.52" cy="83.38" r="1.5"/><circle cx="80.48" cy="83.38" r="1.5"/><circle cx="98.64" cy="93.86" r="1.5"/><circle cx="109.12" cy="112.02" r="1.5"/></g>
+  <circle cx="70" cy="122.5" r="34" fill="#2a2436" fill-opacity=".55"/>
+  <g><path d="M70.00 122.50L74.20 122.50L70.00 58.50Z" fill="#ecd59f"/><path d="M70.00 122.50L65.80 122.50L70.00 58.50Z" fill="#9c7a3e"/><path d="M70.00 122.50L65.80 122.50L70.00 186.50Z" fill="#ecd59f"/><path d="M70.00 122.50L74.20 122.50L70.00 186.50Z" fill="#9c7a3e"/><path d="M70.00 122.50L70.00 126.10L110.00 122.50Z" fill="#ecd59f"/><path d="M70.00 122.50L70.00 118.90L110.00 122.50Z" fill="#9c7a3e"/><path d="M70.00 122.50L70.00 118.90L30.00 122.50Z" fill="#ecd59f"/><path d="M70.00 122.50L70.00 126.10L30.00 122.50Z" fill="#9c7a3e"/><path d="M70.00 122.50L72.26 124.76L85.56 106.94Z" fill="#ecd59f"/><path d="M70.00 122.50L67.74 120.24L85.56 106.94Z" fill="#9c7a3e"/><path d="M70.00 122.50L67.74 124.76L85.56 138.06Z" fill="#ecd59f"/><path d="M70.00 122.50L72.26 120.24L85.56 138.06Z" fill="#9c7a3e"/><path d="M70.00 122.50L67.74 120.24L54.44 138.06Z" fill="#ecd59f"/><path d="M70.00 122.50L72.26 124.76L54.44 138.06Z" fill="#9c7a3e"/><path d="M70.00 122.50L72.26 120.24L54.44 106.94Z" fill="#ecd59f"/><path d="M70.00 122.50L67.74 124.76L54.44 106.94Z" fill="#9c7a3e"/></g>
+  <circle cx="70" cy="122.5" r="2.2" fill="#ecd59f"/>
+  <g><path d="M20.00 17.50Q20.00 22.00 23.60 22.00Q20.00 22.00 20.00 26.50Q20.00 22.00 16.40 22.00Q20.00 22.00 20.00 17.50Z" fill="#c9a96e"/><path d="M120.00 17.50Q120.00 22.00 123.60 22.00Q120.00 22.00 120.00 26.50Q120.00 22.00 116.40 22.00Q120.00 22.00 120.00 17.50Z" fill="#c9a96e"/><path d="M20.00 218.50Q20.00 223.00 23.60 223.00Q20.00 223.00 20.00 227.50Q20.00 223.00 16.40 223.00Q20.00 223.00 20.00 218.50Z" fill="#c9a96e"/><path d="M120.00 218.50Q120.00 223.00 123.60 223.00Q120.00 223.00 120.00 227.50Q120.00 223.00 116.40 223.00Q120.00 223.00 120.00 218.50Z" fill="#c9a96e"/></g>
 </svg>

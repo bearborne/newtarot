@@ -6,6 +6,8 @@
   --gold: #c9a96e;
   --card-front: #efe7d6;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  /* for longer reading text: clearer letters at small sizes */
+  --read: "Literata", Georgia, "Iowan Old Style", serif;
 
   /* The back of every card. Put your own picture here to replace it,
      e.g. url("cards/back.jpg") */
@@ -238,16 +240,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* The elemental frames sit above the cards, on their edges */
 .magic.frames { z-index: 2; }
 
-/* The rune circle and flare that open the reading summary, above everything */
-.summon {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 9000;
-  pointer-events: none;
-}
-
 /* The burst of sunlight when the card of the day is revealed */
 .sun {
   position: absolute;
@@ -425,6 +417,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .flyer { position: fixed; z-index: 20; pointer-events: none; }
+/* The light of the pick magic, above the flying card; taps go through */
+.pickfx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 21; pointer-events: none; }
+
+/* The Pick magic button on the home screen */
+.pick-fx-btn {
+  flex: none;
+  min-width: 8.5rem;
+  padding: 7px 14px;
+  border: 1px solid rgba(201, 169, 110, .6);
+  border-radius: 999px;
+  background: rgba(201, 169, 110, .08);
+  color: var(--gold);
+  font-size: .95rem;
+  white-space: nowrap;
+}
+.pick-fx-btn:active { background: rgba(201, 169, 110, .2); }
 
 /* When the spread is done: the summary and a new reading */
 .end-actions {
@@ -459,6 +467,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .summary-meaning .asks { margin-top: 10px; }
 .summary-asks { margin-top: 18px; }
 .summary-q { display: block; margin-top: 3px; color: var(--muted); font-size: .92rem; }
+/* The summary's reading text in the screen-reading font; the gold
+   headings keep the deck's own serif. */
+.summary-page .col-main li > span,
+.summary-page .col-main .summary-q,
+.summary-meaning > p:not(.asks-title) { font-family: var(--read); }
 
 /* The lens buttons: each reads the spread from another angle */
 .lens-title {
@@ -598,6 +611,51 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .empty-note { color: var(--muted); font-style: italic; }
 #quickClose { margin-top: 6px; }
+/* Longer reading text everywhere in the screen-reading font */
+.quick-text p, .details-text p, .asks li { font-family: var(--read); }
+
+/* The card window on wide screens: the card big on the left, the
+   reading beside it, sized like the summary so they match. */
+@media (min-width: 900px) and (min-height: 560px) {
+  .overlay { padding: 32px; }
+  .quick-box {
+    max-width: 960px;
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    column-gap: 48px;
+    align-items: start;
+    padding: 40px 48px 32px;
+    text-align: left;
+    border-radius: 22px;
+  }
+  .quick-box > * { grid-column: 2; }
+  .quick-card {
+    grid-column: 1;
+    grid-row: 1 / span 20;
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, .6);
+  }
+  .quick-box .pos-label { margin-top: 4px; font-size: .9rem; letter-spacing: .18em; }
+  .quick-box .pos-question { font-size: 1.05rem; }
+  .quick-box h2 {
+    margin: 8px 0 10px;
+    padding-bottom: 14px;
+    font-size: 2.3rem;
+    border-bottom: 1px solid rgba(201, 169, 110, .28);
+  }
+  .quick-box .tags { justify-content: flex-start; }
+  .quick-box .keywords { text-align: left; font-size: 1.1rem; margin-bottom: 18px; }
+  .quick-box .quick-text { margin-bottom: 14px; }
+  .quick-box .quick-text p { font-size: 1.2rem; line-height: 1.7; }
+  .quick-box .asks { padding: 18px 24px 8px; margin-bottom: 22px; }
+  .quick-box .asks-title { font-size: .95rem; letter-spacing: .18em; margin-bottom: 12px; opacity: 1; }
+  .quick-box .asks li { font-size: 1.18rem; line-height: 1.6; }
+  /* the two buttons side by side at the bottom */
+  .quick-box #moreBtn { justify-self: start; }
+  .quick-box #quickClose { justify-self: start; margin-top: 10px; }
+}
 
 /* ── 4. The details window ────────────────── */
 
@@ -971,12 +1029,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
    to fill the screen: cards sized by the window's height, all of a
    spread in one row, a bigger fan and deck, larger names under cards. */
 @media (min-width: 900px) and (min-height: 560px) {
+  /* The table is exactly one screen tall: the header, hint and fan keep
+     their size and the row of cards takes whatever height is left. */
+  #table { height: 100vh; height: 100dvh; min-height: 0; overflow: clip; }
   .slots {
     --gap: 28px;
-    /* the height left for a row of cards, once the header, the names,
-       the hint and the fan are taken off */
-    --row-h: calc(100dvh - 470px);
+    /* the height the cards row actually got, less the name, key word
+       and position label under each card */
+    --row-h: calc(100cqh - 100px);
+    flex: 1 1 0;
+    min-height: 0;
+    container-type: size;
+    width: 100%;
+    max-width: none;
     margin-top: 16px;
+    /* room above the cards for the name that glows in when one is
+       turned over, so it never runs into the header or the cards */
+    padding-top: 88px;
   }
   .slots[data-count="1"] { --w: min(calc(var(--row-h) * 4 / 7), 320px); }
   .slots[data-count="2"] { --w: min(calc(var(--row-h) * 4 / 7), 300px); }
@@ -989,6 +1058,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .slot-label { font-size: .9rem; margin-top: 6px; }
 
   .deck-area { height: 230px; --fw: 80px; --fh: 140px; }
+  /* sit the fan a little higher so its tilted outer cards keep their
+     corners on screen */
+  .deck, .fan-card { bottom: 30px; }
   .hint { font-size: 1.1rem; }
 
   #table .bar #spreadName { font-size: 1.35rem; }
@@ -999,39 +1071,35 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .spread-btn { width: calc((100% - 4 * 12px) / 5); }
 }
 
-/* "Read it as": one way of reading at a time, stepped with arrows,
-   with a dot for each way underneath. */
+/* "Read it as": every way of reading as its own button, the chosen
+   one lit in gold. */
 .lens {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   max-width: 22rem;
-  margin: 4px auto 0;
+  margin: 6px auto 4px;
 }
-.lens .nav-btn { flex: none; }
-.lens-name {
-  flex: 1;
-  margin: 0;
-  min-height: 2.7em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-size: 1.08rem;
+.lens-btn {
+  padding: 9px 14px;
+  border: 1px solid rgba(201, 169, 110, .35);
+  border-radius: 10px;
+  background: rgba(201, 169, 110, .04);
+  color: var(--muted);
+  font-size: 1rem;
   line-height: 1.3;
+  text-align: center;
+  transition: background .2s, border-color .2s, color .2s;
+}
+@media (hover: hover) {
+  .lens-btn:hover { border-color: rgba(201, 169, 110, .7); color: var(--ink); }
+}
+.lens-btn.on {
+  background: rgba(201, 169, 110, .16);
+  border-color: var(--gold);
   color: var(--gold);
 }
-.lens-dots { display: flex; justify-content: center; gap: 7px; margin: 8px 0 4px; }
-.lens-dots button {
-  width: 7px;
-  height: 7px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(201, 169, 110, .6);
-  background: none;
-}
-.lens-dots button.on { background: var(--gold); border-color: var(--gold); }
 
 /* Card page and reading summary on wide screens: two columns, the card
    (or the cards and the lens) on the left staying in view, the reading
@@ -1052,4 +1120,125 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .summary-page .summary-cards { flex-wrap: wrap; justify-content: center; overflow: visible; }
   .summary-page .related-card { flex-basis: 86px; }
   .summary-page .related-pic { width: 86px; }
+
+  /* The summary uses the whole screen: a wider cards column on the
+     left, and the reading laid out in two columns of separated
+     sections on the right. */
+  .details-body.summary-page {
+    max-width: min(1680px, 100%);
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+    gap: 64px;
+    padding: 16px 40px 64px;
+  }
+  .summary-page .summary-title { font-size: 2rem; }
+  .summary-page .related-card { flex-basis: 108px; gap: 6px; }
+  .summary-page .related-pic { width: 108px; }
+  .summary-page .related-name { font-size: .95rem; }
+  .summary-page .related-label { font-size: .7rem; }
+  .summary-page .summary-kw { font-size: .9rem; }
+
+  .summary-page .col-main {
+    columns: 2 440px;
+    column-gap: 56px;
+    column-rule: 1px solid rgba(201, 169, 110, .14);
+    padding-top: 0;
+  }
+  /* the lens's own wrapper shouldn't hold its two sections together */
+  .summary-page .col-main > div:not(.asks) { display: contents; }
+  .summary-page .summary-part,
+  .summary-page .summary-asks {
+    break-inside: avoid;
+    margin: 0 0 28px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(201, 169, 110, .28);
+  }
+  .summary-page .summary-asks {
+    padding: 18px 22px 8px;
+    border-top: 0;
+    display: inline-block; /* keeps it in one column */
+  }
+  .summary-page .asks-title {
+    margin-bottom: 14px;
+    font-size: .95rem;
+    letter-spacing: .18em;
+    opacity: 1;
+  }
+  .summary-page .summary-part li {
+    margin: 0;
+    padding: 12px 0;
+    line-height: 1.6;
+    font-size: 1.15rem;
+  }
+  /* a faint line between the entries of a section */
+  .summary-page .summary-part li + li { border-top: 1px dashed rgba(201, 169, 110, .14); }
+  .summary-page .summary-part li:first-child { padding-top: 0; }
+  .summary-page .summary-part li strong { font-size: 1.25rem; margin-bottom: 4px; }
+  .summary-page .summary-q { font-size: 1rem; margin-top: 6px; }
+  .summary-page .summary-meaning > p:not(.asks-title) { font-size: 1.2rem; line-height: 1.7; margin-bottom: .9em; }
+  .summary-page .summary-asks li { font-size: 1.2rem; font-family: var(--read); }
+
+  /* The card's page, laid out like the summary: the card big on the
+     left, its meanings and the rest in two columns of separated
+     sections on the right, in larger reading type. */
+  .details-body.card-page {
+    max-width: min(1680px, 100%);
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+    gap: 64px;
+    padding: 16px 40px 64px;
+  }
+  /* as big as fits: the whole left column (card, name, keywords, boxes)
+     stays in view while the reading scrolls beside it */
+  .card-page .details-card { width: min(100%, 380px, calc((100dvh - 350px) * 4 / 7)); border-radius: 10px; }
+  .card-page .col-side h2 { font-size: 2.3rem; margin-top: 10px; }
+  .card-page .col-side .pos-label { font-size: .9rem; letter-spacing: .18em; }
+  .card-page .col-side .pos-question { font-size: 1.05rem; }
+  .card-page .col-side .keywords { font-size: 1.1rem; }
+  .card-page .carry-line { font-size: 1.15rem; }
+  .card-page .corr-value { font-size: 1.1rem; }
+
+  .card-page .col-main {
+    columns: 2 440px;
+    column-gap: 56px;
+    column-rule: 1px solid rgba(201, 169, 110, .14);
+    padding-top: 0;
+  }
+  /* every part is its own section, kept whole, with a gold line above */
+  .card-page .col-main > * {
+    break-inside: avoid;
+    margin: 0 0 28px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(201, 169, 110, .28);
+  }
+  /* the question boxes keep their own panel look, no line above */
+  .card-page .col-main > .asks {
+    display: inline-block;   /* keeps it in one column */
+    padding: 18px 22px 8px;
+    border-top: 0;
+  }
+  .card-page .col-main > .note-box { text-align: left; }
+  .card-page .asks-title {
+    margin-bottom: 14px;
+    font-size: .95rem;
+    letter-spacing: .18em;
+    opacity: 1;
+  }
+  .card-page .details-text p { font-size: 1.2rem; line-height: 1.7; margin-bottom: .9em; }
+  .card-page .details-text .keywords { text-align: left; font-size: 1.1rem; }
+  .card-page .asks li { font-size: 1.18rem; line-height: 1.6; }
+  .card-page .meaning .asks { margin-top: 14px; }
+  .card-page .picture-guide li {
+    margin: 0;
+    padding: 12px 0;
+    font-size: 1.15rem;
+    line-height: 1.6;
+    font-family: var(--read);
+  }
+  .card-page .picture-guide li + li { border-top: 1px dashed rgba(201, 169, 110, .14); }
+  .card-page .picture-guide li:first-child { padding-top: 0; }
+  .card-page .picture-guide strong { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 4px; }
+  .card-page .history-sum, .card-page .history-list li { font-family: var(--read); font-size: 1.08rem; }
+  .card-page .related-title { font-size: 1.05rem; }
+  .card-page .related-card { flex-basis: 92px; }
+  .card-page .related-pic { width: 92px; }
+  .card-page .related-name { font-size: .9rem; }
 }
