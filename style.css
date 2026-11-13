@@ -117,7 +117,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   height: 100%;
   transform-style: preserve-3d;
   -webkit-transform-style: preserve-3d;
-  transition: transform .75s cubic-bezier(.3, .7, .2, 1);
+  transition: transform var(--flip, .75s) cubic-bezier(.3, .7, .2, 1);
 }
 .tcard.flipped .tcard-inner { transform: rotateY(180deg); }
 .tcard .face {
@@ -167,24 +167,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .float-deck {
   position: relative;
   flex: 1 0 128px;
-  width: 200px;
+  width: 100%;
   margin: 0 auto;
   cursor: pointer;
+  /* the cards are sized from this box's height (cqh) */
+  container-type: size;
 }
 .fd-card {
+  /* card height: about half the box, never smaller than before */
+  --ch: clamp(92px, 52cqh, 300px);
+  --cw: calc(var(--ch) * 54 / 92);
   position: absolute;
   left: 50%;
-  top: calc(50% - 42px);
-  width: 54px;
-  height: 92px;
-  margin-left: -27px;
+  top: calc(50% - var(--ch) / 2 + 4px);
+  width: var(--cw);
+  height: var(--ch);
+  margin-left: calc(var(--cw) / -2);
   transform-origin: 50% 150%;
   transform: rotate(var(--a));
   transition: transform .6s cubic-bezier(.3,.7,.3,1);
 }
 .fd-card.lift { transform: translateY(-16px) scale(1.12); z-index: 2; }
 .fd-bob { width: 100%; height: 100%; animation: fd-bob 3.2s ease-in-out infinite; }
-@keyframes fd-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes fd-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(var(--bob, -6px)); } }
 .fd-flip {
   position: relative;
   width: 100%;
@@ -256,11 +261,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sun > * { position: absolute; border-radius: 50%; }
 .sun-glow {
   width: 60px; height: 60px; margin: -30px;
-  background: radial-gradient(circle, #fffbe8 0%, #ffe39a 28%, rgba(255, 196, 90, .45) 52%, rgba(255, 180, 70, 0) 70%);
+  background: radial-gradient(circle, rgba(255, 251, 232, .7) 0%, rgba(255, 227, 154, .55) 28%, rgba(255, 196, 90, .25) 52%, rgba(255, 180, 70, 0) 70%);
 }
 .sun-rays {
   width: 340px; height: 340px; margin: -170px;
-  background: repeating-conic-gradient(rgba(255, 226, 150, .55) 0deg 5deg, rgba(255, 226, 150, 0) 5deg 20deg);
+  background: repeating-conic-gradient(rgba(255, 226, 150, .32) 0deg 5deg, rgba(255, 226, 150, 0) 5deg 20deg);
   -webkit-mask: radial-gradient(circle, #000 12%, transparent 68%);
   mask: radial-gradient(circle, #000 12%, transparent 68%);
 }

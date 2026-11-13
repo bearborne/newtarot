@@ -3,6 +3,27 @@
 const $ = (id) => document.getElementById(id);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// A little life in every movement: n give or take `amt` (12% by default),
+// so no two flips, fans or flights play out exactly alike.
+const vary = (n, amt = 0.12) => n * (1 + (Math.random() * 2 - 1) * amt);
+// A random number between -n and n.
+const wobble = (n) => (Math.random() * 2 - 1) * n;
+
+// Every animation in the app gets a slightly different speed and start,
+// unless the person has asked for reduced motion.
+{
+  const plain = Element.prototype.animate;
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  Element.prototype.animate = function (frames, opts) {
+    if (!still.matches && opts != null) {
+      opts = typeof opts === "number" ? { duration: opts } : { ...opts };
+      if (opts.duration > 1) opts.duration = vary(opts.duration);
+      if (opts.delay > 0) opts.delay = vary(opts.delay, 0.18);
+    }
+    return plain.call(this, frames, opts);
+  };
+}
+
 const DECK_LOOK = 10;   // how many card backs make up the deck pile
 const FAN_MAX = 22;     // most cards shown in the fan to pick from
 
@@ -230,7 +251,7 @@ function revealTitle(name, sub = "", above = 120, limit = 0) {
   word.querySelectorAll(".rpg-letter").forEach((s, i) => s.animate(
     [{ opacity: 0, filter: "blur(4px)", transform: "translateY(5px) scale(1.25)" },
      { opacity: 1, filter: "blur(0)", transform: "none" }],
-    { duration: 420, delay: 100 + i * 28, easing: "ease-out", fill: "both" }));
+    { duration: 420, delay: 100 + i * 28 + wobble(14), easing: "ease-out", fill: "both" }));
   box.querySelector(".rpg-sub")?.animate(
     [{ opacity: 0, letterSpacing: ".45em" }, { opacity: 1, letterSpacing: ".25em" }],
     { duration: 600, delay: 200 + name.length * 28, easing: "ease-out", fill: "both" });
@@ -439,8 +460,12 @@ function buildFloatDeck() {
   FD_ANGLES.forEach((a, i) => {
     const c = el("div", "fd-card");
     c.style.setProperty("--a", `${a}deg`);
+    c.style.transitionDuration = `${vary(0.6).toFixed(2)}s`;
     const bob = el("div", "fd-bob");
-    bob.style.animationDelay = `${-i * 0.45}s`;
+    // Each card floats at its own pace and height.
+    bob.style.animationDelay = `${(-i * 0.45 + wobble(0.2)).toFixed(2)}s`;
+    bob.style.animationDuration = `${vary(3.2, 0.15).toFixed(2)}s`;
+    bob.style.setProperty("--bob", `${vary(-6, 0.3).toFixed(1)}px`);
     const flip = el("div", "fd-flip");
     flip.append(el("div", "cback"));
     bob.append(flip);
@@ -469,11 +494,17 @@ function sunburst() {
   $("floatDeck").append(sun);
   glow.animate(
     [{ transform: "scale(0)", opacity: 1 }, { transform: "scale(5)", opacity: 1, offset: 0.35 }, { transform: "scale(9)", opacity: 0 }],
-    { duration: 1400, easing: "ease-out", fill: "forwards" }
+    { duration: 750, easing: "ease-out", fill: "forwards" }
   );
   rays.animate(
-    [{ transform: "scale(.2) rotate(0deg)", opacity: 0 }, { transform: "scale(1) rotate(25deg)", opacity: 1, offset: 0.3 }, { transform: "scale(1.5) rotate(70deg)", opacity: 0 }],
-    { duration: 1800, easing: "ease-out", fill: "forwards" }
+    (() => {
+      // the rays turn either way, by a different amount each time
+      const dir = Math.random() < 0.5 ? -1 : 1, start = wobble(20), turn = vary(70, 0.3) * dir;
+      return [{ transform: `scale(.2) rotate(${start}deg)`, opacity: 0 },
+        { transform: `scale(${vary(1, 0.1)}) rotate(${start + turn * 0.36}deg)`, opacity: 1, offset: 0.3 },
+        { transform: `scale(${vary(1.5, 0.12)}) rotate(${start + turn}deg)`, opacity: 0 }];
+    })(),
+    { duration: 950, easing: "ease-out", fill: "forwards" }
   );
   for (let i = 0; i < 22; i++) {
     const s = el("div", "sun-spark");
@@ -481,12 +512,12 @@ function sunburst() {
     const a = (i / 22) * Math.PI * 2 + Math.random() * 0.3;
     const r = 70 + Math.random() * 90;
     s.animate(
-      [{ transform: "translate(0,0) scale(1)", opacity: 1 },
+      [{ transform: "translate(0,0) scale(1)", opacity: .75 },
        { transform: `translate(${Math.cos(a) * r}px, ${Math.sin(a) * r}px) scale(.3)`, opacity: 0 }],
-      { duration: 900 + Math.random() * 700, delay: 120, easing: "cubic-bezier(.1,.8,.3,1)", fill: "both" }
+      { duration: 500 + Math.random() * 350, delay: 60, easing: "cubic-bezier(.1,.8,.3,1)", fill: "both" }
     );
   }
-  setTimeout(() => sun.remove(), 2000);
+  setTimeout(() => sun.remove(), 1200);   // room for the slowest variation
 }
 
 // First tap: the card rises, bursts in sunlight and turns over.
@@ -598,7 +629,7 @@ async function fanOut() {
   $("deck").hidden = true;
 
   for (let i = 0; i < count; i++) {
-    const a = count === 1 ? 0 : -width / 2 + (width * i) / (count - 1);
+    const a = (count === 1 ? 0 : -width / 2 + (width * i) / (count - 1)) + wobble(0.6);
     const c = el("div", "cback fan-card");
     c.style.setProperty("--a", `${a}deg`);
     c.dataset.card = S.order[i];
@@ -637,6 +668,7 @@ async function pick(fanCard) {
 
   // The card that will sit in the spread, face down.
   const t = el("div", "tcard");
+  t.style.setProperty("--flip", `${vary(0.75).toFixed(2)}s`);
   const inner = el("div", "tcard-inner");
   const back = el("div", "face cback");
   const face = cardFace(slot.card, false, slot.reversed);
@@ -667,10 +699,12 @@ async function pick(fanCard) {
   fanCard.style.visibility = "hidden";
   if (!calm) magicFlight(flyer, fanCard);
 
+  // Each card lifts a little differently on its way: higher or lower, a touch of tilt.
+  const lift = vary(26, 0.3), tilt = a + wobble(4), peak = vary(0.2, 0.25);
   await flyer.animate(
     [
       { transform: `rotate(${a}deg)` },
-      { transform: `translate(0, -26px) rotate(${a}deg) scale(1.08)`, offset: 0.2 },
+      { transform: `translate(${wobble(6)}px, -${lift}px) rotate(${tilt}deg) scale(${vary(1.08, 0.03)})`, offset: peak },
       { transform: `translate(${dx}px, ${dy}px) scale(${scale})` },
     ],
     { duration: 700, easing: "cubic-bezier(.4,0,.2,1)" }
@@ -698,7 +732,7 @@ async function gatherFan() {
   await Promise.all(cards.map((c, i) => c.animate(
     [
       { transform: `rotate(${c.dataset.angle}deg)`, opacity: 1 },
-      { transform: "rotate(0deg) translateY(60px)", opacity: 0 },
+      { transform: `rotate(${wobble(3)}deg) translateY(${vary(60, 0.25)}px)`, opacity: 0 },
     ],
     { duration: 500, delay: i * 10, easing: "ease-in", fill: "forwards" }
   ).finished));
@@ -1450,7 +1484,7 @@ function magicReveal(i) {
   const waiting = S.slots.map((s, k) => k).filter((k) => !MG.cards[k]);
   if (waiting.length) {
     const next = waiting.find((k) => k > i) ?? waiting[0];
-    MG.travels.push({ from: i, to: next, at: now, dur: 1100 });
+    MG.travels.push({ from: i, to: next, at: now, dur: vary(1100) });
   } else if (!MG.finale) {
     MG.finale = now + 500;   // all turned: the threads gather
   }
@@ -2241,9 +2275,9 @@ function summonSummary(open) {
   (onTable ? S.slots : []).forEach((s, i) => {
     const g = cardGeom(i);
     for (let k = 0; k < 6; k++) {
-      const a = (k / 6) * Math.PI * 2 + i;
+      const a = (k / 6) * Math.PI * 2 + i + wobble(0.3);
       motes.push({ x: g.x + Math.cos(a) * (g.rx + 20), y: g.y + Math.sin(a) * (g.ry + 20),
-        rn: rand(RUNES.length), delay: i * 60 + k * 25, end: (motes.length * 2.4) % (Math.PI * 2) });
+        rn: rand(RUNES.length), delay: Math.max(0, i * 60 + k * 25 + wobble(20)), end: (motes.length * 2.4) % (Math.PI * 2) });
     }
   });
   const start = performance.now();
