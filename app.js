@@ -1214,6 +1214,8 @@ function elementFor(card) {
 }
 
 // ── The elemental frames ────────────────────────────────
+// Shelved for now: set to true to bring the frames back.
+const FRAMES_ON = false;
 // Each turned card gets a painted frame on its own edge, in its element's
 // colour: fire burning, water rolling in crests, earth's stones, dirt and
 // gems travelling round, and air flowing in ribbons. They're drawn on a
@@ -1602,7 +1604,7 @@ function drawFrames(t) {
   const x = MG.frx;
   if (!x) return;
   x.clearRect(0, 0, MG.w, MG.h);
-  if (!S) return;
+  if (!S || !FRAMES_ON) return;
   MG.cards.forEach((c, i) => {
     if (!c || !c.element || !S.slots[i]) return;
     const r = S.slots[i].box.getBoundingClientRect();
@@ -1627,7 +1629,7 @@ function magicReveal(i) {
   if (fresh) {
     MG.cards[i] = { at: now, runes: Array.from({ length: 8 }, () => rand(RUNES.length)), spin: rand(2) ? 1 : -1,
       element: S.slots[i].card ? elementFor(S.slots[i].card) : null };
-    if (S.slots[i].card) measureInset(S.slots[i].card);
+    if (FRAMES_ON && S.slots[i].card) measureInset(S.slots[i].card);
   }
   const waiting = S.slots.map((s, k) => k).filter((k) => !MG.cards[k]);
   // Each card turned adds the next element of the circle; the last one
