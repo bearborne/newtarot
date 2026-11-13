@@ -161,10 +161,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 #home > :not(.sky) { position: relative; }
 
-/* The floating deck above the spreads */
+/* The floating deck above the spreads. It grows to take up the spare
+   height, so the switches at the bottom of the home screen sit on the
+   bottom edge of the screen; the cards float in the middle of it. */
 .float-deck {
   position: relative;
-  height: 128px;
+  flex: 1 0 128px;
   width: 200px;
   margin: 0 auto;
   cursor: pointer;
@@ -172,7 +174,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fd-card {
   position: absolute;
   left: 50%;
-  top: 22px;
+  top: calc(50% - 42px);
   width: 54px;
   height: 92px;
   margin-left: -27px;
@@ -245,7 +247,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sun {
   position: absolute;
   left: 50%;
-  top: 68px;
+  top: calc(50% + 4px);
   width: 0;
   height: 0;
   pointer-events: none;
