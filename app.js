@@ -690,6 +690,7 @@ function startReading(spread) {
   const slots = $("slots");
   slots.innerHTML = "";
   slots.dataset.count = Math.min(n, 5);
+  layoutSlots();
   spread.positions.forEach((pos, i) => {
     const s = el("div", "slot");
     const box = el("div", "slot-card");
@@ -713,6 +714,23 @@ function startReading(spread) {
   $("hint").textContent = "Tap the deck to spread the cards";
   $("hint").classList.remove("dim");
 }
+
+// How many cards go in each row. Every spread, of any size, fits on one
+// screen with the deck: the cards shrink to the room left over rather
+// than the page ever needing a scroll (see .slots in style.css).
+function slotGrid(n, wide = innerWidth >= 700) {
+  const cols = wide
+    ? (n <= 6 ? n : Math.ceil(n / Math.ceil(n / 6)))
+    : (n <= 3 ? n : n === 4 ? 2 : Math.min(5, Math.ceil(n / 2)));
+  return { cols, rows: Math.ceil(n / cols) };
+}
+function layoutSlots() {
+  if (!S) return;
+  const { cols, rows } = slotGrid(S.n);
+  $("slots").style.setProperty("--cols", cols);
+  $("slots").style.setProperty("--rows", rows);
+}
+addEventListener("resize", layoutSlots);
 
 function pileOffset(i) {
   return `translate(${i * 0.5}px, ${-i * 0.6}px)`;
@@ -882,9 +900,11 @@ function refreshKeywords() {
     const key = spreadKeyword(s);
     s.kwEl.textContent = "";
     if (!all.length) { s.kwEl.textContent = " "; return; }
+    // The key word on its own line; the others (on wide screens only)
+    // in a block of fixed height, so every card's words line up.
     s.kwEl.append(el("b", "kw-key", key || all[0]));
-    all.filter((w) => w.toLowerCase() !== (key || all[0]).toLowerCase())
-      .forEach((w) => s.kwEl.append(" · " + w));
+    const rest = all.filter((w) => w.toLowerCase() !== (key || all[0]).toLowerCase());
+    s.kwEl.append(el("span", "kw-rest", rest.join(" · ") || " "));
   });
 }
 
@@ -909,7 +929,7 @@ async function turn(slot) {
     const cut = S.lastTurn !== slot;
     if (cut) finishTurn(slot);
     magicReveal(slot.i);
-    slot.nameEl.textContent = slot.card.name;
+    slot.nameEl.replaceChildren(el("span", "slot-name-text", slot.card.name));
     refreshKeywords();
     slot.nameEl.classList.add("shown");
     slot.kwEl.classList.add("shown");
@@ -2985,6 +3005,77 @@ function patternParts(entries) {
   return { parts, themes, topEl, els, majors, revs };
 }
 
+// What the reading asks: questions for the spread as a whole (from its
+// themes, elements and patterns), then one from each card, headed by the
+// place it holds in the chosen lens.
+const ELEMENT_ASK = {
+  Fire:  ["Where is your energy and courage pulling you?", "Where could a little more passion or courage help?"],
+  Water: ["What are your feelings telling you here?", "What would change if you let yourself feel this fully?"],
+  Air:   ["What would an honest, clear look show you?", "What thought or conversation is waiting to be had?"],
+  Earth: ["What practical step would ground this?", "What would help this take root in daily life?"],
+};
+function summaryQuestions(entries, lens) {
+  const n = entries.length;
+  const { themes, topEl, els, majors, revs } = patternParts(entries);
+  const whole = themes.slice(0, 3).map((t) => THEME_TEXT[t][2]);
+  if (topEl && els[topEl] >= 2) whole.push(ELEMENT_ASK[topEl][0]);
+  const missing = Object.keys(ELEMENT_ASK).filter((x) => !els[x]);
+  if (n >= 4 && missing.length === 1) whole.push(ELEMENT_ASK[missing[0]][1]);
+  if (majors >= 2 && majors >= Math.ceil(n / 2)) whole.push("What larger lesson might this chapter be teaching you?");
+  if (revs && revs >= Math.ceil(n / 2)) whole.push("What is still forming, and needs time rather than pressure?");
+  if (n >= 3) whole.push("How do the first card and the last speak to each other?");
+  whole.push("What is one small step you could take this week?");
+  if (!themes.length) whole.unshift("What links these cards for you?");
+
+  const used = new Set(whole);
+  const each = entries.map((e, i) => {
+    const q = filled(questionsFor(e.card, e.reversed)).find((x) => !used.has(x));
+    if (!q) return null;
+    used.add(q);
+    return { head: lens ? placeName(lens, i, e) : e.label || e.card.name, text: q };
+  }).filter(Boolean);
+  return { whole: [...new Set(whole)], each };
+}
+function fillSummaryAsks(box, entries, lens) {
+  const { whole, each } = summaryQuestions(entries, lens);
+  box.innerHTML = "";
+  box.append(el("p", "asks-title", "The reading asks"));
+  const ul = el("ul");
+  whole.forEach((q) => ul.append(el("li", "", q)));
+  box.append(ul);
+  if (!each.length) return;
+  box.append(el("p", "asks-title asks-sub", "Each card asks"));
+  const ul2 = el("ul", "asks-each");
+  each.forEach(({ head, text }) => {
+    const li = el("li");
+    li.append(el("strong", "", head), el("span", "", text));
+    ul2.append(li);
+  });
+  box.append(ul2);
+}
+
+// Buttons that belong together stay one line each, all at the same size:
+// the text shrinks together until the longest one fits.
+function fitOneLine(buttons) {
+  const fit = () => {
+    if (!buttons[0] || !buttons[0].isConnected) return;
+    buttons.forEach((b) => (b.style.fontSize = ""));
+    const base = parseFloat(getComputedStyle(buttons[0]).fontSize);
+    let k = 1;
+    buttons.forEach((b) => {
+      const cs = getComputedStyle(b);
+      const room = b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const need = b.scrollWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      if (need > room && room > 0) k = Math.min(k, room / need);
+    });
+    if (k < 1) buttons.forEach((b) => (b.style.fontSize = `${Math.max(10, Math.floor(base * k * 0.98 * 2) / 2)}px`));
+  };
+  requestAnimationFrame(fit);
+  document.fonts?.ready.then(fit);
+  const ro = new ResizeObserver(fit);
+  ro.observe(buttons[0]);
+}
+
 function listSection(title, items) {
   const sec = el("section", "summary-part");
   sec.append(el("p", "asks-title", title));
@@ -3018,7 +3109,10 @@ function openSummary(entries, title, magic = false) {
 
   // The cards, with the place each one holds in the chosen lens.
   const items = entries.map((e) => detailsItem(e.card, e.reversed, e.label, e.question || ""));
-  const row = el("div", "related-row summary-cards");
+  // All the cards in view at once, never a sideways scroll: one row up
+  // to five, then two (or more) even rows.
+  const row = el("div", "summary-cards");
+  row.style.setProperty("--cols", n <= 5 ? n : Math.min(5, Math.ceil(n / 2)));
   const placeLabels = entries.map((e, i) => {
     const b = el("button", "related-card");
     const lab = el("span", "related-label");
@@ -3042,6 +3136,7 @@ function openSummary(entries, title, magic = false) {
   lensBox.setAttribute("role", "group");
   lensBox.setAttribute("aria-label", "Read it as");
   const lensPart = el("div");
+  const asks = el("div", "asks summary-asks");
   let current = 0;
   const render = () => {
     const lens = lenses[current];
@@ -3064,13 +3159,17 @@ function openSummary(entries, title, magic = false) {
       if (p) pairs.push(p);
     }
     if (pairs.length) lensPart.append(listSection("How the cards meet", pairs));
+    fillSummaryAsks(asks, entries, lens);
   };
   lenses.forEach((lens, i) => {
     const b = el("button", "lens-btn", lens.name);
     b.addEventListener("click", () => { current = i; render(); });
     lensBox.append(b);
   });
-  if (lenses.length > 1) side.append(el("p", "lens-title", "Read it as"), lensBox);
+  if (lenses.length > 1) {
+    side.append(el("p", "lens-title", "Read it as"), lensBox);
+    fitOneLine([...lensBox.children]);
+  }
   main.append(lensPart);
   render();
 
@@ -3088,11 +3187,6 @@ function openSummary(entries, title, magic = false) {
   main.append(story);
   parts.forEach(([t, list]) => main.append(listSection(t, list)));
 
-  const asks = el("div", "asks summary-asks");
-  asks.append(el("p", "asks-title", "The reading asks"));
-  const ql = el("ul");
-  ql.append(el("li", "", themes.length ? THEME_TEXT[themes[0]][2] : "What links these cards for you?"));
-  asks.append(ql);
   main.append(asks);
 
   sheet.append(bar, body);

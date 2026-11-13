@@ -364,29 +364,42 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ── 2. The table ─────────────────────────── */
 
+/* LAYOUT RULE (phones and computers alike): the table is exactly one
+   screen tall and never scrolls. The header, hint and deck keep their
+   size; the cards take the height left over, in a grid of --cols ×
+   --rows set by app.js (slotGrid) for any number of cards. Each card is
+   as wide as both the width and the height allow, keeping room under
+   it for its name and key word (--text-h). */
+#table { height: 100vh; height: 100dvh; min-height: 0; overflow: clip; }
+.slots-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
 .slots {
-  --w: 120px;
-  --gap: 14px;
-  flex: 1;
+  --cols: 1;
+  --rows: 1;
+  --gap: 10px;
+  --row-gap: 10px;
+  --text-h: 56px;
+  --max-w: 180px;
+  --w: max(36px, min(
+    var(--max-w),
+    calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols)),
+    calc((100cqh - var(--rows) * var(--text-h) - (var(--rows) - 1) * var(--row-gap)) / var(--rows) * 4 / 7)));
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-content: center;
-  gap: 10px var(--gap);
-  margin: 8px auto 0;
-  max-width: calc(var(--w) * var(--cols) + var(--gap) * (var(--cols) - 1));
-}
-.slots[data-count="1"] { --w: min(44vw, 180px); --cols: 1; }
-.slots[data-count="2"] { --w: min(38vw, 160px); --cols: 2; }
-.slots[data-count="3"] { --w: min(27vw, 140px); --cols: 3; }
-.slots[data-count="4"] { --w: min(30vw, 120px); --cols: 2; }
-.slots[data-count="5"] { --w: min(26vw, 110px); --cols: 3; --gap: 10px; }
-/* Wider screens: four cards fit in one row */
-@media (min-width: 700px) {
-  .slots[data-count="4"] { --cols: 4; }
+  gap: var(--row-gap) var(--gap);
+  width: calc(var(--w) * var(--cols) + var(--gap) * (var(--cols) - 1));
 }
 
-.slot { width: var(--w); text-align: center; }
+.slot { width: var(--w); text-align: center; container-type: inline-size; }
 .slot-card {
   aspect-ratio: 4 / 7;
   border-radius: 7px;
@@ -406,22 +419,39 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .kw-key {
   font-weight: 600;
   color: #f3d99a;
-  text-shadow: 0 0 6px rgba(255, 214, 130, .75), 0 0 14px rgba(255, 196, 90, .4);
+  text-shadow: 0 0 3px rgba(12, 11, 17, .95), 0 0 6px rgba(255, 214, 130, .55), 0 0 14px rgba(255, 196, 90, .3);
 }
 /* The card's name like a title from an old tome, set between two small
    ornaments (a star and a fading line), sitting close over its keywords. */
+/* UNIFORM LABELS: every card's name takes exactly two lines (a short
+   name sits centred in them) and its key word exactly one, so all the
+   cards line up whatever they are. A dark halo keeps the gold words
+   readable over the rune circle. */
+.slot-name, .slot-kw {
+  text-shadow: 0 0 3px rgba(12, 11, 17, .95), 0 0 8px rgba(12, 11, 17, .85), 0 0 16px rgba(12, 11, 17, .7);
+}
 .slot-name {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: .4em;
-  margin-top: 7px;
+  height: 2.1em;
+  margin: 6px -4px 0;
   font-family: "IM Fell English SC", var(--read);
-  font-size: clamp(.9rem, 3.7vw, 1.05rem);
-  letter-spacing: .04em;
+  font-size: clamp(.74rem, 12cqi, 1.05rem);
+  letter-spacing: .03em;
   line-height: 1.05;
   color: #ece0c6;
+}
+.slot-name-text {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
   text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 .slot-name::before, .slot-name::after {
   content: "";
@@ -431,14 +461,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 8' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='l'%3E%3Cstop offset='0' stop-color='%23c9a96e' stop-opacity='.9'/%3E%3Cstop offset='1' stop-color='%23c9a96e' stop-opacity='.15'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 0.6L4.9 3.1 7.4 4 4.9 4.9 4 7.4 3.1 4.9 0.6 4 3.1 3.1Z' fill='%23e3c98f'/%3E%3Crect x='8.5' y='3.6' width='17.5' height='.8' fill='url(%23l)'/%3E%3C/svg%3E");
 }
 .slot-name::after { transform: scaleX(-1); }
+/* Narrow cards leave no room for the ornaments beside the name */
+@container (max-width: 150px) {
+  .slot-name::before, .slot-name::after { display: none; }
+}
 .slot-kw {
-  margin-top: 1px;
-  font-size: clamp(.74rem, 3.1vw, .86rem);
+  margin-top: 2px;
+  font-size: clamp(.72rem, 10.5cqi, .95rem);
   font-style: italic;
-  line-height: 1.2;
+  line-height: 1.25;
   color: var(--gold);
   transition-delay: .25s;
 }
+.kw-key, .kw-rest { display: block; overflow: hidden; }
+/* the key word may use the gap beside its card before it is cut short */
+.kw-key { white-space: nowrap; text-overflow: ellipsis; height: 1.25em; margin-inline: -5px; }
+/* The other keywords only where there is room: always two lines high */
+.kw-rest { display: none; }
 
 .hint {
   min-height: 1.4em;
@@ -451,10 +490,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hint.dim { opacity: 0; }
 
 .deck-area {
-  --fw: 64px;
-  --fh: 112px;
+  --fw: 60px;
+  --fh: 105px;
   position: relative;
-  height: 200px;
+  height: 172px;
   flex-shrink: 0;
 }
 .deck, .fan-card {
@@ -518,10 +557,33 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* The reading's summary */
 .summary-title { margin-bottom: 10px; }
-.summary-cards { justify-content: safe center; margin-bottom: 6px; }
+/* LAYOUT RULE: a row of a reading's cards always shows every card, in
+   even rows (--cols set by app.js), never cut off at the screen's edge.
+   Labels and key words take one line, names exactly two. */
+.summary-cards {
+  --cols: 5;
+  --max: 86px;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, var(--max)));
+  justify-content: center;
+  gap: 12px 8px;
+  margin: 0 auto 6px;
+  padding: 2px 0 6px;
+}
+.summary-cards .related-card { min-width: 0; width: 100%; }
+.summary-cards .related-pic { width: 100%; }
+.summary-cards .related-label, .summary-kw {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.summary-cards .related-label { letter-spacing: .05em; margin-inline: -4px; max-width: calc(100% + 8px); }
 .summary-kw { font-size: .72rem; font-style: italic; color: var(--gold); text-align: center; }
-.summary { text-align: left; }
-.summary-part, .summary-asks { margin-top: 18px; text-align: left; }
+/* LAYOUT RULE: the reading's text is centred, on the summary and on the
+   card's pages alike. */
+.summary { text-align: center; }
+.summary-part, .summary-asks { margin-top: 18px; text-align: center; }
 .summary-part ul { margin: 0; padding: 0; list-style: none; }
 .summary-part li { margin: 0 0 .8em; line-height: 1.45; }
 .summary-part li strong {
@@ -623,11 +685,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .asks {
   width: 100%;
   margin: 4px 0 14px;
-  padding: 12px 16px 4px;
-  border-left: 2px solid rgba(201, 169, 110, .5);
+  padding: 14px 16px 4px;
+  border-top: 1px solid rgba(201, 169, 110, .4);
+  border-bottom: 1px solid rgba(201, 169, 110, .4);
   background: rgba(201, 169, 110, .06);
-  border-radius: 0 8px 8px 0;
-  text-align: left;
+  border-radius: 8px;
+  text-align: center;
 }
 .asks-title {
   margin: 0 0 6px;
@@ -670,7 +733,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .meaning .asks-title { margin-top: 6px; }
 /* Keywords always sit centered, also inside the Upright and Reversed parts */
 .details-text .keywords { text-align: center; }
-.asks ul { margin: 0; padding: 0 0 0 1.2em; }
+.asks ul { margin: 0; padding: 0; list-style: none; }
+.asks-sub { margin-top: 14px; }
+.asks-each strong {
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--serif);
+  font-weight: normal;
+  font-size: .95rem;
+  color: var(--gold);
+}
 .asks li {
   margin: 0 0 .75em;
   font-size: 1.08rem;
@@ -693,7 +765,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     column-gap: 48px;
     align-items: start;
     padding: 40px 48px 32px;
-    text-align: left;
+    text-align: center;
     border-radius: 22px;
   }
   .quick-box > * { grid-column: 2; }
@@ -712,8 +784,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
     font-size: 2.3rem;
     border-bottom: 1px solid rgba(201, 169, 110, .28);
   }
-  .quick-box .tags { justify-content: flex-start; }
-  .quick-box .keywords { text-align: left; font-size: 1.1rem; margin-bottom: 18px; }
+  .quick-box .tags { justify-content: center; }
+  .quick-box .keywords { text-align: center; font-size: 1.1rem; margin-bottom: 18px; }
   .quick-box .quick-text { margin-bottom: 14px; }
   .quick-box .quick-text p { font-size: 1.2rem; line-height: 1.7; }
   .quick-box .asks { padding: 18px 24px 8px; margin-bottom: 22px; }
@@ -750,7 +822,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   margin: 8px auto 0;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
 }
-.details-text { text-align: left; margin-top: 12px; }
+.details-text { text-align: center; margin-top: 12px; }
 
 /* The game-style title when a card is revealed */
 .rpg-title {
@@ -865,20 +937,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* Your draws */
 .history-sum { margin: 0 0 6px; }
-.history-list { margin: 0; padding: 0 0 0 1.1em; color: var(--muted); }
+.history-list { margin: 0; padding: 0; list-style: none; color: var(--muted); }
 .history-list li { margin: 0 0 .35em; }
 
 /* Related cards, and the cards in a past reading */
 .related-title { margin: 10px 0 6px; font-size: .95rem; color: var(--muted); }
+/* Rows of cards wrap, centred, instead of scrolling sideways */
 .related-row {
+  --rc: 72px;
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 10px;
   padding: 2px 2px 8px;
-  scroll-snap-type: x proximity;
 }
 .related-card {
-  flex: 0 0 72px;
+  flex: 0 0 var(--rc);
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -890,13 +965,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
   scroll-snap-align: start;
 }
 .related-pic {
-  width: 72px;
+  width: 100%;
   aspect-ratio: 4 / 7;
   border-radius: 6px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
 }
 .related-pic .placeholder { font-size: .6rem; }
-.related-name { font-size: .78rem; line-height: 1.2; text-align: center; }
+.related-name {
+  max-width: 100%;
+  min-height: 2.4em;
+  font-size: .78rem;
+  line-height: 1.2;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
 .related-label {
   font-size: .62rem;
   letter-spacing: .1em;
@@ -1096,32 +1182,20 @@ button { font: inherit; color: inherit; cursor: pointer; }
    to fill the screen: cards sized by the window's height, all of a
    spread in one row, a bigger fan and deck, larger names under cards. */
 @media (min-width: 900px) and (min-height: 560px) {
-  /* The table is exactly one screen tall: the header, hint and fan keep
-     their size and the row of cards takes whatever height is left. */
-  #table { height: 100vh; height: 100dvh; min-height: 0; overflow: clip; }
-  .slots {
-    --gap: 28px;
-    /* the height the cards row actually got, less the name, key word
-       and position label under each card */
-    --row-h: calc(100cqh - 100px);
-    flex: 1 1 0;
-    min-height: 0;
-    container-type: size;
-    width: 100%;
-    max-width: none;
-    margin-top: 16px;
-    /* room above the cards for the name that glows in when one is
-       turned over, so it never runs into the header or the cards */
-    padding-top: 88px;
+  .slots-wrap { margin-top: 16px; padding-top: 88px; }
+  /* room above the cards (padding) for the name that glows in when one
+     is turned over, so it never runs into the header or the cards */
+  .slots { --gap: 24px; --row-gap: 18px; --text-h: 118px; --max-w: 300px; }
+  .slot-name { margin-top: 10px; font-size: clamp(.9rem, 9cqi, 1.22rem); }
+  .slot-kw { font-size: clamp(.8rem, 7.5cqi, 1rem); }
+  .kw-rest {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    height: 2.5em;
+    color: var(--gold);
   }
-  .slots[data-count="1"] { --w: min(calc(var(--row-h) * 4 / 7), 320px); }
-  .slots[data-count="2"] { --w: min(calc(var(--row-h) * 4 / 7), 300px); }
-  .slots[data-count="3"] { --w: min(calc(var(--row-h) * 4 / 7), 280px); }
-  .slots[data-count="4"] { --w: min(calc(var(--row-h) * 4 / 7), calc((100vw - 200px) / 4), 260px); --cols: 4; }
-  .slots[data-count="5"] { --w: min(calc(var(--row-h) * 4 / 7), calc((100vw - 220px) / 5), 240px); --cols: 5; --gap: 24px; }
-
-  .slot-name { margin-top: 10px; font-size: 1.22rem; }
-  .slot-kw { font-size: 1rem; }
   .slot-label { font-size: .9rem; margin-top: 6px; }
 
   .deck-area { height: 230px; --fw: 80px; --fh: 140px; }
@@ -1149,7 +1223,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   margin: 6px auto 4px;
 }
 .lens-btn {
-  padding: 9px 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 9px 12px;
   border: 1px solid rgba(201, 169, 110, .35);
   border-radius: 10px;
   background: rgba(201, 169, 110, .04);
@@ -1181,12 +1257,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
     padding: 12px 8px 40px;
   }
   .two-col .col-side { position: sticky; top: 8px; text-align: center; }
-  .two-col .col-main { text-align: left; padding-top: 6px; }
+  .two-col .col-main { text-align: center; padding-top: 6px; }
   .two-col .details-card { width: min(100%, 300px); }
   .two-col .col-main > :first-child { margin-top: 0; }
-  .summary-page .summary-cards { flex-wrap: wrap; justify-content: center; overflow: visible; }
-  .summary-page .related-card { flex-basis: 86px; }
-  .summary-page .related-pic { width: 86px; }
 
   /* The summary uses the whole screen: a wider cards column on the
      left, and the reading laid out in two columns of separated
@@ -1198,8 +1271,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
     padding: 16px 40px 64px;
   }
   .summary-page .summary-title { font-size: 2rem; }
-  .summary-page .related-card { flex-basis: 108px; gap: 6px; }
-  .summary-page .related-pic { width: 108px; }
+  .summary-page .summary-cards { --max: 108px; }
+  .summary-page .related-card { gap: 6px; }
   .summary-page .related-name { font-size: .95rem; }
   .summary-page .related-label { font-size: .7rem; }
   .summary-page .summary-kw { font-size: .9rem; }
@@ -1290,7 +1363,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
     opacity: 1;
   }
   .card-page .details-text p { font-size: 1.2rem; line-height: 1.7; margin-bottom: .9em; }
-  .card-page .details-text .keywords { text-align: left; font-size: 1.1rem; }
+  .card-page .details-text .keywords { text-align: center; font-size: 1.1rem; }
   .card-page .asks li { font-size: 1.18rem; line-height: 1.6; }
   .card-page .meaning .asks { margin-top: 14px; }
   .card-page .picture-guide li {
@@ -1305,7 +1378,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .card-page .picture-guide strong { font-family: var(--serif); font-size: 1.2rem; margin-bottom: 4px; }
   .card-page .history-sum, .card-page .history-list li { font-family: var(--read); font-size: 1.08rem; }
   .card-page .related-title { font-size: 1.05rem; }
-  .card-page .related-card { flex-basis: 92px; }
-  .card-page .related-pic { width: 92px; }
+  .card-page .related-row { --rc: 92px; }
   .card-page .related-name { font-size: .9rem; }
 }
