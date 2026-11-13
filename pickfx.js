@@ -11,8 +11,8 @@
 //            fuse back into the card, which then cools
 //   bolt   – Gold lightning: a forked bolt strikes the slot and the card
 //            appears in the flash
-//   moon   – Moon blink: silver dust, a ring of moonlight closes on the
-//            slot and the card blinks in
+//   moon   – Moon blink: silver dust, a little crescent arcs over as a
+//            ring of moonlight closes on the slot, and the card blinks in
 //
 // PickFX.play(style, { flyer, card, from, to }) moves `flyer` (a card
 // back at the fan card's place) and resolves once it sits exactly over
@@ -216,6 +216,24 @@ const PickFX = (() => {
         return true;
       },
     };
+  }
+  // A small glowing crescent moon, horns to the upper right.
+  function crescent(x, y, r, a) {
+    if (a <= 0 || r <= 0) return;
+    dot(x, y, r * 0.9, 0.55 * a, MOON);
+    ctx.save();
+    glowOn();
+    ctx.globalAlpha = a;
+    // Everything except the bite taken out of the moon's disc.
+    ctx.beginPath();
+    ctx.rect(0, 0, W, H);
+    ctx.arc(x + r * 0.48, y - r * 0.28, r * 0.86, 0, Math.PI * 2);
+    ctx.clip("evenodd");
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(240, 244, 255, 1)";
+    ctx.fill();
+    ctx.restore();
   }
   // Sparks thrown out from a point.
   function burst(x, y, n, o = {}) {
@@ -447,6 +465,20 @@ const PickFX = (() => {
       sparks.push({ x: f.x + (Math.random() - 0.5) * f.w, y: f.y + (Math.random() - 0.5) * f.h,
         vx: Math.cos(ang) * 60 * K, vy: -Math.random() * 90 * K, life: 0.45, max: 0.45, r: 1.4, col: MOON });
     }
+    // A little crescent arcs over to the slot on a silver trail.
+    const trail = makeTrail(0.12, 4 * K, MOON);
+    const midX = (f.x + to.x) / 2 - 30 * K, midY = Math.min(f.y, to.y) - 40 * K;
+    add((t) => {
+      const u = seg(t, 0.03, 0.17);
+      if (u > 0 && u < 1) {
+        const e = u * u * (3 - 2 * u);
+        const x = bq(f.x, midX, to.x, e), y = bq(f.y, midY, to.y, e);
+        trail.push(x, y, t);
+        crescent(x, y, 7 * K, 1);
+        if (Math.random() < 0.5) burst(x, y, 1, { v: 14, life: 0.35, size: 1.1, col: MOON });
+      }
+      return trail.draw(t) || u < 1;
+    });
     add((t) => {
       const rc = eo(seg(t, 0.04, 0.18));
       ring(to.x, to.y, lr(to.h * 1.1, to.h * 0.36, rc), rc > 0 ? 1 - seg(t, 0.18, 0.3) : 0, 1.6, MOON);

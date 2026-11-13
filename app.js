@@ -685,7 +685,6 @@ function startReading(spread) {
 
   $("home").hidden = true;
   $("table").hidden = false;
-  $("spreadName").textContent = spread.name;
   $("endActions").hidden = true;
 
   const slots = $("slots");
@@ -844,8 +843,8 @@ async function pick(fanCard) {
     if (S !== reading) return;
     S.phase = "turn";
     refreshKeywords();   // now that every card is known
-    if (S.revealed === S.n) setHint(S.n === 1 ? "Tap the card to read it" : "Tap any card to read it");
-    else setHint(S.n === 1 ? "Tap the card to turn it over" : S.revealed ? "Tap a card to turn it over, or a turned one to read it" : "Tap a card to turn it over");
+    if (S.revealed === S.n) setHint("");
+    else setHint(S.n === 1 ? "Tap the card to turn it over" : "Tap a card to turn it over");
   }
 }
 
@@ -927,17 +926,15 @@ async function turn(slot) {
       }, 250);
     }
     S.revealed++;
-    const last = S.revealed === S.n, first = S.revealed === 1;
+    const last = S.revealed === S.n;
     await wait(800);
     if (S !== reading) return;
     slot.turning = false;
     if (last) {
-      setHint(S.n === 1 ? "Tap the card to read it" : "Tap any card to read it");
+      setHint("");
       $("summaryBtn").hidden = false;
       $("endActions").hidden = false;
       $("endActions").animate([{ opacity: 0 }, { opacity: 1 }], 400);
-    } else if (first && S.picked === S.n && S.phase === "turn") {
-      setHint("Tap a turned card to read it");   // while still picking, the pick hint stays
     }
     return;   // turning a card only shows it; tap it again to read it
   }
@@ -1706,6 +1703,48 @@ function strokeCurve(ctx, path, upTo = 1) {
 }
 
 function drawMagic(t) {
+  drawMagicLayer(t);
+  softenUnderText(t);
+}
+
+// The magic thins out behind each turned card's name and keywords, so
+// the gold words never sit on gold runes. One soft oval per card, its
+// edge fading away gradually (close to a bell curve), so it reads as the
+// light simply growing quieter there rather than a cut-out. It eases in
+// as the words appear.
+function softenUnderText(t) {
+  const ctx = MG.ctx;
+  if (!ctx || !S) return;
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";
+  S.slots.forEach((s, i) => {
+    const c = MG.cards[i];
+    if (!c || !s.nameEl.classList.contains("shown")) return;
+    const a = Math.min(1, Math.max(0, (t - c.at - 200) / 900));
+    if (a <= 0) return;
+    const k = a * a * (3 - 2 * a);
+    const r1 = s.nameEl.getBoundingClientRect(), r2 = s.kwEl.getBoundingClientRect();
+    const left = Math.min(r1.left, r2.left), right = Math.max(r1.right, r2.right);
+    const top = Math.min(r1.top, r2.top), bottom = Math.max(r1.bottom, r2.bottom);
+    if (right <= left || bottom <= top) return;
+    const cx = (left + right) / 2, cy = (top + bottom) / 2;
+    const rx = (right - left) / 2 + 34, ry = (bottom - top) / 2 + 22;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(rx, ry);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    [[0, 0.92], [0.35, 0.88], [0.55, 0.72], [0.7, 0.5], [0.82, 0.28], [0.92, 0.1], [1, 0]]
+      .forEach(([o, v]) => g.addColorStop(o, `rgba(0, 0, 0, ${(v * k).toFixed(3)})`));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+function drawMagicLayer(t) {
   const ctx = MG.ctx;
   ctx.clearRect(0, 0, MG.w, MG.h);
   if (!S) return;
@@ -1851,15 +1890,6 @@ function drawMagic(t) {
     }
   }
   if (!MG.portal) drawArcaneCircle(ctx, t, { cx, cy, R1, seal, from });
-  // The circle may reach past the header: let it fade out beneath the title.
-  ctx.save();
-  ctx.globalCompositeOperation = "destination-out";
-  const fade = ctx.createLinearGradient(0, header - 14, 0, header + 4);
-  fade.addColorStop(0, "rgba(0, 0, 0, 1)");
-  fade.addColorStop(1, "rgba(0, 0, 0, 0)");
-  ctx.fillStyle = fade;
-  ctx.fillRect(0, 0, MG.w, header + 4);
-  ctx.restore();
 }
 
 // ── The great arcane circle ─────────────────────────────

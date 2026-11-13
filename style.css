@@ -131,6 +131,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tcard .cface { transform: rotateY(180deg); box-shadow: 0 4px 12px rgba(0, 0, 0, .45); }
 .tcard .placeholder { font-size: clamp(.62rem, 2.6vw, .9rem); }
 
+/* Hovering a turned card: it rises a little and hums with golden energy. */
+.tcard { transition: transform .35s cubic-bezier(.2, .8, .3, 1); }
+.tcard .cface { transition: box-shadow .35s ease; }
+@media (hover: hover) {
+  .tcard.flipped:hover { transform: scale(1.05); position: relative; z-index: 3; }
+  .tcard.flipped:hover .cface {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .45), 0 0 14px 3px rgba(255, 214, 130, .55), 0 0 34px 8px rgba(255, 190, 90, .22);
+    animation: card-energy 2.2s ease-in-out .35s infinite;
+  }
+}
+@keyframes card-energy {
+  0%, 100% { box-shadow: 0 4px 12px rgba(0, 0, 0, .45), 0 0 14px 3px rgba(255, 214, 130, .55), 0 0 34px 8px rgba(255, 190, 90, .22); }
+  50% { box-shadow: 0 4px 12px rgba(0, 0, 0, .45), 0 0 18px 5px rgba(255, 222, 150, .7), 0 0 46px 14px rgba(255, 190, 90, .32); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tcard.flipped:hover .cface { animation: none; }
+}
+
 /* A reversed card sits upside down */
 .cface.reversed { transform: rotate(180deg); }
 .tcard .cface.reversed { transform: rotateY(180deg) rotate(180deg); }
@@ -390,12 +408,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: #f3d99a;
   text-shadow: 0 0 6px rgba(255, 214, 130, .75), 0 0 14px rgba(255, 196, 90, .4);
 }
+/* The card's name like a title from an old tome, set between two small
+   ornaments (a star and a fading line), sitting close over its keywords. */
 .slot-name {
-  margin-top: 6px;
-  font-size: clamp(.8rem, 3.4vw, .95rem);
-  line-height: 1.2;
-  color: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4em;
+  margin-top: 7px;
+  font-family: "IM Fell English SC", var(--read);
+  font-size: clamp(.9rem, 3.7vw, 1.05rem);
+  letter-spacing: .04em;
+  line-height: 1.05;
+  color: #ece0c6;
+  text-wrap: balance;
 }
+.slot-name::before, .slot-name::after {
+  content: "";
+  flex: 0 1 1.7em;
+  min-width: .6em;
+  height: .6em;
+  background: no-repeat center / 100% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 8' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='l'%3E%3Cstop offset='0' stop-color='%23c9a96e' stop-opacity='.9'/%3E%3Cstop offset='1' stop-color='%23c9a96e' stop-opacity='.15'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M4 0.6L4.9 3.1 7.4 4 4.9 4.9 4 7.4 3.1 4.9 0.6 4 3.1 3.1Z' fill='%23e3c98f'/%3E%3Crect x='8.5' y='3.6' width='17.5' height='.8' fill='url(%23l)'/%3E%3C/svg%3E");
+}
+.slot-name::after { transform: scaleX(-1); }
 .slot-kw {
   margin-top: 1px;
   font-size: clamp(.74rem, 3.1vw, .86rem);
@@ -1085,7 +1120,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .slots[data-count="4"] { --w: min(calc(var(--row-h) * 4 / 7), calc((100vw - 200px) / 4), 260px); --cols: 4; }
   .slots[data-count="5"] { --w: min(calc(var(--row-h) * 4 / 7), calc((100vw - 220px) / 5), 240px); --cols: 5; --gap: 24px; }
 
-  .slot-name { margin-top: 10px; font-size: 1.12rem; }
+  .slot-name { margin-top: 10px; font-size: 1.22rem; }
   .slot-kw { font-size: 1rem; }
   .slot-label { font-size: .9rem; margin-top: 6px; }
 
