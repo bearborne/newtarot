@@ -388,6 +388,7 @@ function showHome() {
   resetMagic();
   $("table").hidden = true;
   $("home").hidden = false;
+  placeCotdWords();   // measured again now the home screen is showing
   window.scrollTo(0, 0);
   startSky();
 }
@@ -496,6 +497,67 @@ function setFdFace(pick) {
   flip.append(cardFace(pick.card, true, pick.reversed));
 }
 
+// Once the card of the day is turned, its keywords hover around it,
+// drifting like the cards themselves: half on each side, in a loose
+// zigzag, always clear of the card's face and inside the screen.
+function showCotdWords(pick, fadeIn) {
+  const box = $("floatDeck");
+  box.querySelector(".fd-words")?.remove();
+  const words = filled(keywordsFor(pick.card, pick.reversed)).slice(0, 6);
+  if (!words.length) return;
+  const ring = el("div", "fd-words");
+  ring.setAttribute("aria-hidden", "true");
+  const spans = words.map((w, i) => {
+    const word = el("span", "fd-word", w);
+    word.style.setProperty("--fx", `${wobble(7).toFixed(1)}px`);
+    word.style.setProperty("--fy", `${vary(-9, 0.35).toFixed(1)}px`);
+    word.style.animationDuration = `${vary(0.9).toFixed(2)}s, ${vary(4.2, 0.25).toFixed(2)}s`;
+    word.style.animationDelay = `${fadeIn ? (0.15 + i * 0.12).toFixed(2) : 0}s, ${(-Math.random() * 4).toFixed(2)}s`;
+    if (!fadeIn) word.style.animationName = "none, fd-drift";
+    word.dataset.side = i % 2 ? "1" : "-1";   // alternate sides, so the order reads across
+    word.dataset.jx = Math.random().toFixed(3);
+    word.dataset.jy = wobble(1).toFixed(3);
+    ring.append(word);
+    return word;
+  });
+  box.append(ring);
+  placeCotdWords();
+}
+
+function placeCotdWords() {
+  const box = $("floatDeck");
+  const words = [...box.querySelectorAll(".fd-word")];
+  const mid = box.children[2];
+  if (!words.length || !mid) return;
+  const ch = mid.offsetHeight * 1.12;              // the lifted card's size
+  const half = (mid.offsetWidth * 1.12) / 2;
+  const room = box.clientWidth / 2 - 8;            // from the centre to the screen's edge
+  const cy = -12;                                  // the lifted card sits a little above centre
+  [-1, 1].forEach((side) => {
+    const list = words.filter((w) => +w.dataset.side === side);
+    list.forEach((w, k) => {
+      w.style.fontSize = "";
+      let width = w.offsetWidth;
+      const inner = half + 14;
+      // A long word on a narrow screen gets a little smaller rather than overlap.
+      if (inner + width > room) {
+        const f = Math.max(0.7, (room - inner) / width);
+        w.style.fontSize = `${(parseFloat(getComputedStyle(w).fontSize) * f).toFixed(1)}px`;
+        width = w.offsetWidth;
+      }
+      const spare = Math.max(0, room - inner - width);
+      // Every other word steps out a little further, for a zigzag.
+      const out = Math.min(spare, (k % 2 ? 0.55 : 0.12 + 0.2 * +w.dataset.jx) * Math.min(spare, ch * 0.35));
+      const x = side * (inner + out + width / 2);
+      const n = list.length;
+      const t = n === 1 ? 0 : k / (n - 1) - 0.5;   // -0.5 … 0.5 down the side
+      const y = cy + t * ch * 0.82 + +w.dataset.jy * ch * 0.04 + (side > 0 ? ch * 0.08 : 0);
+      w.style.setProperty("--x", `${x.toFixed(1)}px`);
+      w.style.setProperty("--y", `${y.toFixed(1)}px`);
+    });
+  });
+}
+
 function showCotdLabel(pick) {
   $("cotd").textContent = `Card of the day · ${cotdName(pick)}`;
   $("floatDeck").setAttribute("aria-label", `Card of the day: ${cotdName(pick)}`);
@@ -526,6 +588,7 @@ function buildFloatDeck() {
     setFdFace(pick);
     box.children[2].classList.add("lift", "turned", "revealed");
     showCotdLabel(pick);
+    showCotdWords(pick, false);
   } else {
     box.setAttribute("aria-label", "Reveal card of the day");
     $("cotd").textContent = "Reveal card of the day";
@@ -585,6 +648,7 @@ async function revealCardOfTheDay() {
   revealTitle(pick.card.name, pick.reversed ? "Card of the day · Reversed" : "Card of the day",
     mid.getBoundingClientRect().top - 4, document.querySelector(".home-head h1").getBoundingClientRect().bottom);
   showCotdLabel(pick);
+  showCotdWords(pick, true);
   label.classList.remove("fade");
   await wait(700);
   fdBusy = false;
@@ -593,10 +657,11 @@ async function revealCardOfTheDay() {
 $("floatDeck").addEventListener("click", revealCardOfTheDay);
 $("cotd").addEventListener("click", revealCardOfTheDay);
 
-addEventListener("resize", () => { sizeSky(); if (calm) drawSky(0); });
+addEventListener("resize", () => { sizeSky(); if (calm) drawSky(0); placeCotdWords(); });
 document.addEventListener("visibilitychange", startSky);
 sizeSky();
 buildFloatDeck();
+document.fonts?.ready.then(placeCotdWords);   // the words' widths change once the font loads
 startSky();
 
 $("backBtn").addEventListener("click", showHome);
@@ -632,7 +697,7 @@ function startReading(spread) {
     // The card's name and its key word appear here once it's turned over.
     const nameEl = el("div", "slot-name", " ");
     const kwEl = el("div", "slot-kw", " ");
-    s.append(box, nameEl, kwEl, el("div", "slot-label", pos.label));
+    s.append(box, nameEl, kwEl);
     slots.append(s);
     S.slots.push({ box, nameEl, kwEl, card: null, reversed: false, tcard: null, flipped: false, i });
   });
@@ -808,9 +873,20 @@ function finishTurn(slot) {
   slot.turning = false;
 }
 
-// The key word under each turned card, recalculated as more cards join the spread.
+// The keywords under each turned card. The one most linked to the rest of
+// the spread comes first, in bold with a glow; it's worked out again as
+// more cards join the spread.
 function refreshKeywords() {
-  S.slots.forEach((s) => { if (s.flipped && s.kwEl) s.kwEl.textContent = spreadKeyword(s) || " "; });
+  S.slots.forEach((s) => {
+    if (!s.flipped || !s.kwEl) return;
+    const all = filled(keywordsFor(s.card, s.reversed));
+    const key = spreadKeyword(s);
+    s.kwEl.textContent = "";
+    if (!all.length) { s.kwEl.textContent = " "; return; }
+    s.kwEl.append(el("b", "kw-key", key || all[0]));
+    all.filter((w) => w.toLowerCase() !== (key || all[0]).toLowerCase())
+      .forEach((w) => s.kwEl.append(" · " + w));
+  });
 }
 
 async function turn(slot) {
@@ -865,7 +941,7 @@ async function turn(slot) {
     }
     return;   // turning a card only shows it; tap it again to read it
   }
-  openQuick(slot.i);
+  openReadingCard(slot.i);
 }
 
 // ── The table's magic ───────────────────────────────────
@@ -3410,11 +3486,13 @@ function fillTags(box, card) {
 
 // Some cards have their own keywords and questions for when they're reversed;
 // the rest use the same ones both ways.
-const filled = (list) => (list || []).map((x) => String(x).trim()).filter(Boolean);
-const hasRevKeywords = (card) => filled(card.reversedKeywords).length > 0;
+// (Function declarations, so the home screen can use them as it first builds.)
+function filled(list) { return (list || []).map((x) => String(x).trim()).filter(Boolean); }
+function hasRevKeywords(card) { return filled(card.reversedKeywords).length > 0; }
 const hasRevQuestions = (card) => filled(card.reversedQuestions).length > 0;
-const keywordsFor = (card, reversed) =>
-  reversed && hasRevKeywords(card) ? card.reversedKeywords : card.keywords;
+function keywordsFor(card, reversed) {
+  return reversed && hasRevKeywords(card) ? card.reversedKeywords : card.keywords;
+}
 const questionsFor = (card, reversed) =>
   reversed && hasRevQuestions(card) ? card.reversedQuestions : card.questions;
 
@@ -3468,14 +3546,16 @@ async function closeQuick() {
 $("quickClose").addEventListener("click", closeQuick);
 $("quick").addEventListener("click", (e) => { if (e.target === $("quick")) closeQuick(); });
 // From a reading, the card page can swipe through the reading's cards.
-$("moreBtn").addEventListener("click", () => {
+function openReadingCard(i) {
+  openIndex = i;
   const items = S.slots.map((s) => {
     const label = el("p"), question = el("p");
     showPosition(s.i, label, question);
     return detailsItem(s.card, s.reversed, label.textContent, question.textContent);
   });
-  openDetails(items, openIndex);
-});
+  openDetails(items, i);
+}
+$("moreBtn").addEventListener("click", () => openReadingCard(openIndex));
 
 // ── Windows that slide up over everything ───────────────
 

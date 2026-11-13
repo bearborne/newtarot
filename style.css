@@ -212,6 +212,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .fd-card.revealed .fd-flip > .cface {
   box-shadow: 0 0 14px 3px rgba(255, 214, 130, .55);
 }
+/* The card of the day's keywords, hovering around it */
+.fd-words { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.fd-word {
+  position: absolute;
+  left: calc(50% + var(--x, 0px));
+  top: calc(50% + var(--y, 0px));
+  white-space: nowrap;
+  color: var(--gold);
+  font-size: clamp(.78rem, 7cqh, 1.05rem);
+  font-style: italic;
+  letter-spacing: .03em;
+  opacity: .92;
+  text-shadow: 0 0 8px rgba(255, 214, 130, .45), 0 0 3px rgba(0, 0, 0, .9);
+  translate: -50% -50%;
+  animation: fd-word-in .9s ease-out both, fd-drift 4.2s ease-in-out infinite;
+}
+@keyframes fd-word-in {
+  from { opacity: 0; scale: .6; filter: blur(4px); }
+  to { opacity: .92; scale: 1; filter: none; }
+}
+@keyframes fd-drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(var(--fx, 0), var(--fy, -8px)); }
+}
+
 .cotd {
   display: block;
   margin: 0 auto 4px;
@@ -270,6 +295,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .fd-bob { animation: none; }
   .fd-card, .fd-flip, .cotd { transition: none; }
+  .fd-word { animation: none !important; }
 }
 
 .spread-list {
@@ -358,6 +384,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
    The lines are there from the start (empty), so nothing jumps. */
 .slot-name, .slot-kw { opacity: 0; transition: opacity .5s; }
 .slot-name.shown, .slot-kw.shown { opacity: 1; }
+/* The spread's key word for this card leads the line */
+.kw-key {
+  font-weight: 600;
+  color: #f3d99a;
+  text-shadow: 0 0 6px rgba(255, 214, 130, .75), 0 0 14px rgba(255, 196, 90, .4);
+}
 .slot-name {
   margin-top: 6px;
   font-size: clamp(.8rem, 3.4vw, .95rem);
