@@ -3628,6 +3628,52 @@ function emergeCards(sheet, C) {
   });
 }
 
+// The arcane colours the portal's light runs through, from the first moment
+// to the last: purple, deepening to indigo, then flushing pink. `veil`: the
+// deep indigo the dimming over the table takes on.
+const PORTAL_PALETTE = { veil: "#120B2E", light: ["#A25CFF", "#5B4BFF", "#8A4DFF", "#FF5FC8"] };
+// The circles' own shades: each ring of the portal's circle is drawn in one
+// of these, neighbours in different ones, so they never all look alike.
+const CIRCLE_TINTS = {
+  deep:   [112, 30, 205],    // deep purple
+  purple: [176, 88, 255],    // purple
+  light:  [228, 208, 255],   // light purple
+  indigo: [72, 92, 255],     // indigo
+};
+const PART_TINT = {
+  core: "light", midband: "indigo", star: "purple", ring: "deep", runes: "light", sats: "indigo",
+  oring: "purple", orunes: "indigo", squares: "deep", arcs: "light", crown: "purple",
+};
+// A sigil picture (and its bloom) recoloured in one shade, made once and kept.
+const TINTED = new WeakMap();
+function tintedSigil(s, rgb) {
+  let byTint = TINTED.get(s);
+  if (!byTint) TINTED.set(s, (byTint = new Map()));
+  const key = rgb.join(", ");
+  if (!byTint.has(key)) {
+    const tint = (src) => {
+      const c = document.createElement("canvas");
+      c.width = src.width; c.height = src.height;
+      const x = c.getContext("2d");
+      x.drawImage(src, 0, 0);
+      x.globalCompositeOperation = "source-atop";   // only where there's light, keeping how strong it is
+      x.fillStyle = `rgba(${key}, .88)`;            // a touch of the white-hot core still shows
+      x.fillRect(0, 0, c.width, c.height);
+      return c;
+    };
+    byTint.set(key, { c: tint(s.c), bloom: s.bloom && tint(s.bloom), size: s.size });
+  }
+  return byTint.get(key);
+}
+
+// The palette as the colours the portal's light is painted in. Deeper
+// colours are lifted to glowing strength (same hue, brighter), since light can't glow dark.
+function portalTints(p) {
+  const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const lift = (c) => { const m = Math.max(...c); return m < 215 ? c.map((v) => Math.round((v * 215) / m)) : c; };
+  return { tints: p.light.map((h) => lift(rgb(h))), veil: rgb(p.veil) };
+}
+
 function arcanePortal(points, open) {
   const W = innerWidth, H = innerHeight;
   // On the table, the portal is the great circle already turning behind the
@@ -3640,6 +3686,7 @@ function arcanePortal(points, open) {
   const R1 = G ? G.R1 : Math.round(Math.min(W, H) * 0.25);
   const sig = sigilsFor(R1), R2 = sig.R2;
   if (G) MG.portal = true;
+  const { tints, veil: veilTo } = portalTints(PORTAL_PALETTE);
   const far = Math.hypot(Math.max(C.x, W - C.x), Math.max(C.y, H - C.y)) + 4;
   // From the History there are no cards on screen: the light comes from the edges instead.
   const src = points.length ? points : Array.from({ length: 5 }, (_, i) => {
@@ -3652,9 +3699,17 @@ function arcanePortal(points, open) {
   const dpr = Math.min(devicePixelRatio || 1, 2);
   cv.width = W * dpr; cv.height = H * dpr;
   Object.assign(cv.style, { position: "fixed", inset: "0", width: "100%", height: "100%", pointerEvents: "none", zIndex: 9000 });
-  document.body.append(cv);
-  const ctx = cv.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // The veil dimming the table goes on its own canvas underneath, so the
+  // light's change of colour (a filter on the canvas above) leaves it be.
+  const veilCv = cv.cloneNode();
+  veilCv.className = "portal-veil";
+  // The circles themselves go on one more, on top, adding their light to the rest.
+  const circCv = cv.cloneNode();
+  circCv.className = "portal-circles";
+  circCv.style.mixBlendMode = CSS.supports("mix-blend-mode", "plus-lighter") ? "plus-lighter" : "screen";
+  document.body.append(veilCv, cv, circCv);
+  const ctx = cv.getContext("2d"), vctx = veilCv.getContext("2d"), cctx = circCv.getContext("2d");
+  [ctx, vctx, cctx].forEach((x) => x.setTransform(dpr, 0, 0, dpr, 0, 0));
 
   // The turned cards, lifted off the table to be swallowed (copies above
   // the light; the real ones wait, hidden, under the summary).
@@ -3689,7 +3744,18 @@ function arcanePortal(points, open) {
     a: hash01(i) * Math.PI * 2, v: 60 + hash01(i + 50) * 260, life: 0.5 + hash01(i + 90) * 0.7, r: 0.8 + hash01(i + 130) * 1.6,
   }));
 
-  let sheet = null, rot = 0, last = 0, pulseT = null;
+  // Motes of light drawn in out of the air, each on its own spiral path:
+  // when it sets off, how long it takes, where from, how far out, how big.
+  const motes = Array.from({ length: 150 }, (_, i) => ({
+    at: 0.05 + hash01(i + 300) * (OPEN - 0.55), dur: 0.7 + hash01(i + 400) * 0.5,
+    a: hash01(i + 500) * Math.PI * 2, d: hash01(i + 600), r: hash01(i + 700),
+  }));
+  // The held breath: just before the window opens the circle slows almost
+  // to a stop and draws in on itself, then lets go.
+  const holdAt = (s) => arcSeg(s, OPEN - 0.45, OPEN - 0.15) * (1 - arcSeg(s, OPEN, OPEN + 0.05));
+  const releaseAt = (s) => { const u = arcSeg(s, OPEN, OPEN + 0.35); return Math.sin(Math.PI * u) * (1 - u * 0.4); };
+
+  let sheet = null, rot = 0, last = 0, pulseT = null, flare = -Math.PI / 2;
   const t0 = performance.now();
   requestAnimationFrame(function frame(now) {
     const s = (now - t0) / 1000, dt = last ? Math.min(0.05, s - last) : 0;
@@ -3702,19 +3768,30 @@ function arcanePortal(points, open) {
       }
     }
     const r = radius(s);
+    // The light takes the palette's first colour the moment it starts and
+    // runs through the rest in turn, with a flash of yellow as
+    // the window opens, reaching the last colour just as it is gone.
+    // (Painted over the light at the end of the frame; the veil darkens
+    // into the palette's own dark colour.)
+    // It starts the moment the summary is asked for and is still going as the circle disappears.
+    const shift = arcSeg(s, 0, END);
+    const white = arcSeg(s, OPEN - 0.06, OPEN) * (1 - arcSeg(s, OPEN, OPEN + 0.45));
+    const veilRGB = [12, 10, 20].map((v, k) => Math.round(v + (veilTo[k] * 0.8 - v) * shift)).join(", ");
     if (sheet) sheet.style.clipPath = `circle(${r}px at ${C.x}px ${C.y}px)`;
     ctx.clearRect(0, 0, W, H);
+    vctx.clearRect(0, 0, W, H);
+    cctx.clearRect(0, 0, W, H);
 
     // The table dims, except through the window.
     const veil = 0.6 * arcSeg(s, 0, 0.45) * (1 - arcSeg(s, END - 0.5, END));
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = `rgba(12, 10, 20, ${veil})`;
-    ctx.fillRect(0, 0, W, H);
+    vctx.fillStyle = `rgba(${veilRGB}, ${veil})`;
+    vctx.fillRect(0, 0, W, H);
     if (r > 0) {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.beginPath();
-      ctx.arc(C.x, C.y, r, 0, Math.PI * 2);
-      ctx.fill();
+      vctx.globalCompositeOperation = "destination-out";
+      vctx.beginPath();
+      vctx.arc(C.x, C.y, r, 0, Math.PI * 2);
+      vctx.fill();
+      vctx.globalCompositeOperation = "source-over";
     }
     ctx.globalCompositeOperation = "lighter";
 
@@ -3770,10 +3847,13 @@ function arcanePortal(points, open) {
       if (!p.fly) { const h = at(e); glint(ctx, h.x, h.y, 7, 1); }
     });
 
-    // The circle spins up: slow, then faster and faster until the window
-    // opens. The table's circle carries on from its own slow turn; a new
-    // one forms first.
-    const speed = (G ? 0 : 0.25) + 11 * Math.pow(arcSeg(s, 0.6, OPEN), 2.2) * (1 - 0.8 * arcSeg(s, OPEN, END));
+    // The circle quickens as it charges, but never to a machine's whirl: it
+    // tops out at about half a turn a second and surges unevenly, as if
+    // pushed along by the energy rather than driven. The table's circle
+    // carries on from its own slow turn; a new one forms first.
+    const surge = 1 + 0.2 * Math.sin(s * 4.3) + 0.1 * Math.sin(s * 7.7 + 1);
+    const hold = holdAt(s);
+    const speed = ((G ? 0 : 0.25) + 2 * Math.pow(arcSeg(s, 0.6, OPEN), 1.8) * (1 - 0.7 * arcSeg(s, OPEN, END))) * surge * (1 - 0.92 * hold);
     rot += speed * dt;
     // The energy's own clock: it carries on from the table's, then runs up to eight times as fast.
     pulseT = pulseT === null ? now : pulseT + dt * 1000 * (1 + 7 * arcSeg(s, 0.4, OPEN));
@@ -3784,7 +3864,8 @@ function arcanePortal(points, open) {
     const grow = G ? 1 : easeOut(arcSeg(s, 0.55, 1.0));
     const charge = arcSeg(s, 0.4, OPEN);
     // It swells as it spins up; then the widening window pushes it out further.
-    const push = swellAt(s) * Math.max(1, r / RW);
+    // (It draws in while holding its breath, and kicks outward as it lets go.)
+    const push = swellAt(s) * Math.max(1, r / RW) * (1 - 0.08 * hold + 0.1 * releaseAt(s));
     const fade = 1 - arcSeg(Math.max(1, r / RW), 1.25, 2.4);   // fading only once the window pushes it out
     // It starts exactly as bright as it was on the table, then grows stronger.
     const base = G ? 0.55 * (0.86 + 0.14 * Math.sin(now / 2300)) : 0.55;
@@ -3804,18 +3885,30 @@ function arcanePortal(points, open) {
     // itself (only the first copy carries the bloom). It's drawn through the
     // same living light as on the table, whose flicker steadies into full
     // power as it charges.
-    livingLight(ctx, G ? now : s * 1000, { cx: C.x, cy: C.y, R1: R1 * push, R2: R2 * push, extent: 4000, strength: 1 - 0.8 * charge }, (x) => {
-    const blur = Math.min(4, 1 + Math.floor(speed / 2.5));
+    // The circles go on their own canvas, each ring in its own shade of
+    // purple (CIRCLE_TINTS), untouched by the colour painted over the rest.
+    cctx.save();
+    if (r > 0) {
+      cctx.beginPath();
+      cctx.rect(0, 0, W, H);
+      cctx.arc(C.x, C.y, r, 0, Math.PI * 2);
+      cctx.clip("evenodd");
+    }
+    livingLight(cctx, G ? now : s * 1000, { cx: C.x, cy: C.y, R1: R1 * push, R2: R2 * push, extent: 4000, strength: 1 - 0.8 * charge }, (x) => {
+    // The afterglow follows the charge, not the speed, so it reads as light
+    // smearing behind the runes rather than a wheel's strobe.
+    const blur = Math.min(4, 1 + Math.floor(charge * 3.5));
     for (let k = 0; k < blur; k++) {
-      const lag = k * 0.035 * Math.min(1, speed / 4), a = bright / (1 + k * 1.3);
-      const layer = (s2, rr, kk, aa) => drawSigil(x, s2, C.x, C.y, rr, kk, aa, k === 0 ? glowUp : 0);
+      const lag = k * 0.03 * charge * (1 - hold), a = bright / (1 + k * 1.3);
+      const layer = (s2, rr, kk, aa, tint) => drawSigil(x, tintedSigil(s2, CIRCLE_TINTS[tint]), C.x, C.y, rr, kk, aa, k === 0 ? glowUp : 0);
+      const parts = (group, rr, kk, aa) => ARC_PARTS.forEach((e) => { if (e.group === group) layer(sig.parts[e.key], rr, kk, aa, PART_TINT[e.key]); });
       if (G) {
         // The table's circle: every element carries on from its own drifting
         // turn and spins up in its own direction, the inner ones fastest and
         // the crown most gently; each blurs just behind itself.
         ARC_PARTS.forEach((e) => {
           const dir = Math.sign(SPIN[e.key][0]), f = e.group === "in" ? 1 : e.group === "crown" ? 0.5 : 0.7;
-          layer(sig.parts[e.key], partTurn(e.key, now) + dir * (rot * f - lag), push, e.group === "in" ? a : a * 0.9);
+          layer(sig.parts[e.key], partTurn(e.key, now) + dir * (rot * f - lag), push, e.group === "in" ? a : a * 0.9, PART_TINT[e.key]);
         });
       } else {
         // A circle forming afresh (from the History): the inner sigil sweeps
@@ -3827,14 +3920,14 @@ function arcanePortal(points, open) {
           x.arc(C.x, C.y, sig.inner.size, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sweep);
           x.closePath();
           x.clip();
-          layer(sig.inner, rotIn - lag, push, a);
+          parts("in", rotIn - lag, push, a);
           x.restore();
         } else {
-          layer(sig.inner, rotIn - lag, push, a);
+          parts("in", rotIn - lag, push, a);
         }
         const kOut = (R1 / R2 + (1 - R1 / R2) * grow) * push;
-        if (grow > 0) layer(sig.outer, rotOut + lag, kOut, a * 0.9 * grow);
-        if (grow > 0) layer(sig.parts.crown, rot * 0.5 + lag, kOut, a * 0.9 * grow);
+        if (grow > 0) parts("out", rotOut + lag, kOut, a * 0.9 * grow);
+        if (grow > 0) layer(sig.parts.crown, rot * 0.5 + lag, kOut, a * 0.9 * grow, PART_TINT.crown);
       }
       // The larger rings: each sweeps in from the top, swelling out of the
       // ring inside it, and turns against its neighbour, faster as it builds.
@@ -3851,11 +3944,12 @@ function arcanePortal(points, open) {
           x.closePath();
           x.clip();
         }
-        layer(sig.outer, rotB + lag * b.dir, kb, a * (0.75 - j * 0.15) * Math.min(1, p * 1.5));
+        layer(sig.outer, rotB + lag * b.dir, kb, a * (0.75 - j * 0.15) * Math.min(1, p * 1.5), j ? "light" : "deep");
         x.restore();
       });
     }
     });
+    cctx.restore();
     // Energy racing round the rings, faster and brighter as it charges.
     if (sweep >= 1) {
       const g = (R1 / R2 + (1 - R1 / R2) * grow) * push;
@@ -3867,9 +3961,66 @@ function arcanePortal(points, open) {
       const a = -Math.PI / 2 + Math.PI * 2 * sweep;
       glint(ctx, C.x + Math.cos(a) * R1, C.y + Math.sin(a) * R1, 8, Math.sin(Math.PI * sweep));
     }
-    // Light gathering in the middle as it spins up.
+    // Motes of light drawn in from the air all round, spiralling into the
+    // circle, more of them and brighter as it charges.
+    ctx.lineCap = "round";
+    motes.forEach((m) => {
+      const p = arcSeg(s, m.at, m.at + m.dur);
+      if (p <= 0 || p >= 1) return;
+      const pos = (q) => {
+        const u = Math.pow(q, 1.7), from = R2 * push * (1.5 + m.d * 0.9), to = R1 * 0.25 * push;
+        const rr = from + (to - from) * u, a = m.a + Math.sqrt(q) * 2.6;   // curling round as soon as it sets off
+        return [C.x + Math.cos(a) * rr, C.y + Math.sin(a) * rr];
+      };
+      const [x1, y1] = pos(p), [x0, y0] = pos(Math.max(0, p - 0.01 - 0.015 * p));   // a speck, its tail lengthening as it's pulled in
+      const al = Math.sin(Math.PI * p) * (0.35 + 0.65 * charge) * fade;
+      ctx.strokeStyle = `rgba(${ARC_CORE}, ${al})`;
+      ctx.lineWidth = 0.8 + m.r * 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+      glowAt(ctx, x1, y1, 5 + m.r * 5, al);
+    });
+    // The runes igniting: a flare runs round the bands, lighting each rune
+    // as it passes, faster every lap as the circle charges. The band's own
+    // runes are drawn again, much brighter, through a wedge trailing the flare.
+    flare += (1.6 + 8 * Math.pow(charge, 1.6)) * dt;
+    const ignite = (0.3 + 0.7 * charge) * fade * (1 - arcSeg(s, OPEN - 0.05, OPEN + 0.2));
+    if (ignite > 0.01 && sweep >= 1) {
+      const kOut = G ? push : (R1 / R2 + (1 - R1 / R2) * grow) * push;
+      const turnOf = (key, inner) => G
+        ? partTurn(key, now) + Math.sign(SPIN[key][0]) * rot * (inner ? 1 : 0.7)
+        : inner ? rotIn : rotOut;
+      const bands = [[sig.parts.runes, turnOf("runes", true), push, R1 - 11, flare, 1]];
+      if (G || grow > 0.5) bands.push([sig.parts.orunes, turnOf("orunes", false), kOut, R2 - 13, -flare * 0.8 + 2, -1]);
+      bands.forEach(([part, turn, k, rr, h, dir], j) => {
+        const lit = ignite * (j ? 0.75 : 1);
+        [[0.9, 0.35], [0.45, 0.45], [0.18, 0.6]].forEach(([len, a]) => {
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(C.x, C.y);
+          ctx.arc(C.x, C.y, rr * k + 30, dir > 0 ? h - len : h - 0.04, dir > 0 ? h + 0.04 : h + len);
+          ctx.closePath();
+          ctx.clip();
+          drawSigil(ctx, part, C.x, C.y, turn, k, lit * a * 3.5, 2);
+          ctx.restore();
+        });
+        glint(ctx, C.x + Math.cos(h) * rr * k, C.y + Math.sin(h) * rr * k, 8 + 6 * charge, lit);
+      });
+    }
+    // Letting go: a ring of light thrown outward from the circle.
+    const rel = arcSeg(s, OPEN, OPEN + 0.5);
+    if (rel > 0 && rel < 1) {
+      ctx.strokeStyle = `rgba(${ARC_CORE}, ${0.8 * (1 - rel)})`;
+      ctx.lineWidth = 2.5 * (1 - rel) + 0.5;
+      ctx.beginPath();
+      ctx.arc(C.x, C.y, R1 * push * (1 + 1.4 * easeOut(rel)), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // Light gathering in the middle as it spins up, held tight as it holds its breath.
     if (charge > 0 && s < SHOW) {
-      const core = charge * (1 - arcSeg(s, OPEN, SHOW));
+      const core = Math.min(1, charge * (1 + 0.6 * hold)) * (1 - arcSeg(s, OPEN, SHOW));
       const g = ctx.createRadialGradient(C.x, C.y, 0, C.x, C.y, R1 * 0.9 * push);
       g.addColorStop(0, `rgba(255, 246, 225, ${0.75 * core})`);
       g.addColorStop(0.35, `rgba(${ARC_GLOW}, ${0.3 * core})`);
@@ -3907,9 +4058,32 @@ function arcanePortal(points, open) {
       });
     }
 
+    // The colour, painted over all the light drawn this frame (only where
+    // there is light, keeping how strong it is): mostly the colour, with a
+    // little of the white-hot core left showing through.
+    {
+      const at = shift * (tints.length - 1), i0 = Math.min(tints.length - 2, Math.floor(at));
+      const f = at - i0, fs = f * f * (3 - 2 * f), A = tints[i0], B = tints[i0 + 1];
+      const FLASH = [255, 214, 70];   // the flash as the window opens: a burst of yellow
+      const col = A.map((v, k) => { const c = v + (B[k] - v) * fs; return Math.round(c + (FLASH[k] - c) * white); });
+      ctx.globalCompositeOperation = "source-atop";
+      ctx.fillStyle = `rgba(${col.join(", ")}, ${(0.85 + 0.1 * white).toFixed(3)})`;
+      ctx.fillRect(0, 0, W, H);
+      ctx.globalCompositeOperation = "lighter";
+      // The circles keep their own shades, but flash yellow with the rest.
+      if (white > 0.001) {
+        cctx.globalCompositeOperation = "source-atop";
+        cctx.fillStyle = `rgba(${FLASH.join(", ")}, ${(0.9 * white).toFixed(3)})`;
+        cctx.fillRect(0, 0, W, H);
+        cctx.globalCompositeOperation = "source-over";
+      }
+    }
+
     if (s < END) requestAnimationFrame(frame);
     else {
       cv.remove();
+      veilCv.remove();
+      circCv.remove();
       if (sheet) sheet.style.clipPath = "";
       src.forEach((p) => { if (p.fly) { p.fly.remove(); p.el.style.visibility = ""; } });
       if (framesFade) framesFade.cancel();
