@@ -806,7 +806,7 @@ const RUNES = [
 
 const GOLD = "201, 169, 110";
 const MG = { cv: null, ctx: null, running: false, cards: [], travels: [], links: [], finale: 0, w: 0, h: 0,
-  flyers: [], ghosts: [], flares: [] };
+  flyers: [], ghosts: [], flares: [], motes: [] };
 
 function sizeMagic() {
   const c = $("magic");
@@ -828,7 +828,7 @@ function sizeMagic() {
 
 function resetMagic() {
   MG.cards = []; MG.travels = []; MG.links = []; MG.finale = 0;
-  MG.flyers = []; MG.ghosts = []; MG.flares = [];
+  MG.flyers = []; MG.ghosts = []; MG.flares = []; MG.motes = [];
   if (MG.ctx) MG.ctx.clearRect(0, 0, MG.w, MG.h);
   if (MG.frx) MG.frx.clearRect(0, 0, MG.w, MG.h);
 }
@@ -845,40 +845,74 @@ function magicFlight(flyer, fanCard) {
   if (!MG.ctx) sizeMagic();
   const now = performance.now();
   const from = rectGeom(fanCard.getBoundingClientRect());
-  MG.flares.push({ geom: () => from, at: now, dur: 650, runes: [], size: 0.6 });
-  MG.flyers.push({ el: flyer, trail: [], at: now, runes: Array.from({ length: 3 }, () => rand(RUNES.length)) });
+  // A small sigil flares where the card leaves the fan, and sparks burst from it.
+  MG.flares.push({ geom: () => from, at: now, dur: 700, runes: [], small: true });
+  burstMotes(from.x, from.y, 14, Math.max(from.rx, from.ry) * 0.6);
+  MG.flyers.push({ el: flyer, trail: [], at: now, runes: Array.from({ length: 6 }, () => rand(RUNES.length)) });
   startMagic();
 }
 
 function magicLand(i) {
-  MG.flares.push({ geom: () => cardGeom(i), at: performance.now(), dur: 1000,
-    runes: Array.from({ length: 6 }, () => rand(RUNES.length)), size: 1 });
+  const now = performance.now();
+  MG.flares.push({ geom: () => cardGeom(i), at: now, dur: 1300, runes: Array.from({ length: 8 }, () => rand(RUNES.length)) });
+  const g = cardGeom(i);
+  burstMotes(g.x, g.y, 26, Math.hypot(g.rx, g.ry) * 0.7);
   startMagic();
 }
 
 // Rises quickly, then fades slowly (p from 0 to 1).
 const swell = (p, rise = 0.18) => (p < rise ? p / rise : Math.max(0, 1 - (p - rise) / (1 - rise)));
 
+// The colours of the pick magic: mostly gold, with warm amber and a little arcane violet.
+const MOTE_COLOURS = ["255, 226, 160", "255, 236, 200", "255, 190, 110", "200, 160, 255"];
+
+// Sparks thrown out from a point, drifting and fading.
+function burstMotes(x, y, n, r0) {
+  const now = performance.now();
+  for (let k = 0; k < n; k++) {
+    const a = (k / n) * Math.PI * 2 + Math.random() * 0.4;
+    const v = 0.05 + Math.random() * 0.09;
+    MG.motes.push({ x: x + Math.cos(a) * r0, y: y + Math.sin(a) * r0, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.02,
+      at: now, life: 600 + Math.random() * 600, r: 1 + Math.random() * 1.8, col: MOTE_COLOURS[k % MOTE_COLOURS.length] });
+  }
+}
+
+// A perfect circle drawn in from the top, as far as `drawn` (0 to 1).
+function sigilRing(ctx, x, y, R, drawn, alpha, width = 1.2) {
+  ctx.strokeStyle = `rgba(255, 224, 165, ${alpha})`;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.arc(x, y, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * drawn);
+  ctx.stroke();
+}
+
+// The sparks streaming behind a flying card: a bright core with a warm halo.
 function drawSparks(ctx, t, trail, alpha) {
   for (let k = 0; k < trail.length - 1; k++) {
     const q1 = trail[k], q2 = trail[k + 1];
-    const steps = Math.max(1, Math.min(6, Math.round(Math.hypot(q2.x - q1.x, q2.y - q1.y) / 6)));
+    const steps = Math.max(1, Math.min(7, Math.round(Math.hypot(q2.x - q1.x, q2.y - q1.y) / 5)));
     for (let s = 0; s < steps; s++) {
-      const u = s / steps, kk = k + u;
-      const a = 0.6 * alpha * (1 - kk / trail.length);
+      const u = s / steps, kk = k + u, fall = 1 - kk / trail.length;
+      const a = alpha * fall;
       if (a <= 0.01) continue;
-      const x = q1.x + (q2.x - q1.x) * u + Math.sin(t / 90 + kk * 2) * 4;
-      const y = q1.y + (q2.y - q1.y) * u + Math.cos(t / 110 + kk * 2) * 4;
-      ctx.fillStyle = `rgba(255, 226, 170, ${a})`;
-      ctx.beginPath();
-      ctx.arc(x, y, 2.8 * (1 - kk / 18), 0, Math.PI * 2);
-      ctx.fill();
+      const x = q1.x + (q2.x - q1.x) * u + Math.sin(t / 90 + kk * 2) * 5 * (1 - fall);
+      const y = q1.y + (q2.y - q1.y) * u + Math.cos(t / 110 + kk * 2) * 5 * (1 - fall);
+      const R = 7 * fall + 2;
+      const halo = ctx.createRadialGradient(x, y, 0, x, y, R);
+      halo.addColorStop(0, `rgba(255, 240, 205, ${0.75 * a})`);
+      halo.addColorStop(0.4, `rgba(255, 190, 110, ${0.35 * a})`);
+      halo.addColorStop(1, "rgba(200, 150, 255, 0)");
+      ctx.fillStyle = halo;
+      ctx.fillRect(x - R, y - R, R * 2, R * 2);
     }
   }
 }
 
-function drawFlights(ctx, t) {
-  // Cards in flight; when one lands, its trail and runes linger and fade.
+// The magic around a card in flight, drawn above the cards (the card itself
+// still flies on top). Its trail and rune circle linger and fade once it lands.
+function drawFlightsTop(ctx, t) {
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
   MG.flyers = MG.flyers.filter((f) => {
     if (!f.el.isConnected) {
       MG.ghosts.push({ trail: f.trail, runes: f.runes, at: t, p: f.trail[0], R: f.R || 30 });
@@ -887,58 +921,107 @@ function drawFlights(ctx, t) {
     const r = f.el.getBoundingClientRect();
     const p = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     f.trail.unshift(p);
-    if (f.trail.length > 16) f.trail.pop();
-    const a = Math.min(1, (t - f.at) / 200);
+    if (f.trail.length > 18) f.trail.pop();
+    const a = Math.min(1, (t - f.at) / 180);
     drawSparks(ctx, t, f.trail, a);
-    f.R = Math.max(r.width, r.height) * 0.7;
-    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, f.R);
-    glow.addColorStop(0, `rgba(255, 214, 140, ${0.22 * a})`);
-    glow.addColorStop(1, "rgba(255, 214, 140, 0)");
+    if (rand(3) === 0) burstMotes(p.x, p.y, 1, Math.max(r.width, r.height) * 0.3);   // sparks shed as it flies
+    f.R = Math.max(r.width, r.height) * 0.72;
+    const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, f.R * 1.25);
+    glow.addColorStop(0, `rgba(255, 220, 150, ${0.4 * a})`);
+    glow.addColorStop(0.6, `rgba(190, 140, 255, ${0.12 * a})`);
+    glow.addColorStop(1, "rgba(190, 140, 255, 0)");
     ctx.fillStyle = glow;
-    ctx.fillRect(p.x - f.R, p.y - f.R, f.R * 2, f.R * 2);
+    ctx.fillRect(p.x - f.R * 1.25, p.y - f.R * 1.25, f.R * 2.5, f.R * 2.5);
+    // A turning circle of runes around the card.
+    sigilRing(ctx, p.x, p.y, f.R, a, 0.75 * a);
+    ctx.save();
+    ctx.setLineDash([2, 5]);
+    ctx.lineDashOffset = t / 25;
+    sigilRing(ctx, p.x, p.y, f.R * 0.86, a, 0.45 * a, 1);
+    ctx.restore();
     f.runes.forEach((rn, k) => {
-      const ang = t / 260 + (k / 3) * Math.PI * 2;
-      const d = f.R * (0.5 + 0.35 * a);
-      rune(ctx, RUNES[rn], p.x + Math.cos(ang) * d, p.y + Math.sin(ang) * d, 9, 0, 0.75 * a);
+      const ang = t / 420 + (k / f.runes.length) * Math.PI * 2;
+      rune(ctx, RUNES[rn], p.x + Math.cos(ang) * f.R * 1.13, p.y + Math.sin(ang) * f.R * 1.13, 9, ang + Math.PI / 2, 0.9 * a);
     });
     return true;
   });
 
   MG.ghosts = MG.ghosts.filter((g) => {
-    const p = (t - g.at) / 450;
+    const p = (t - g.at) / 500;
     if (p >= 1 || !g.p) return false;
-    // The trail drains into the landing spot.
+    // The trail drains into the landing spot while the circle opens out and fades.
     const n = Math.max(1, Math.round(g.trail.length * (1 - p)));
     drawSparks(ctx, t, g.trail.slice(0, n), 1 - p);
+    sigilRing(ctx, g.p.x, g.p.y, g.R * (1 + p * 0.35), 1, 0.75 * (1 - p));
     g.runes.forEach((rn, k) => {
-      const ang = t / 260 + (k / 3) * Math.PI * 2;
-      const d = g.R * (0.85 + 0.4 * p);
-      rune(ctx, RUNES[rn], g.p.x + Math.cos(ang) * d, g.p.y + Math.sin(ang) * d, 9, 0, 0.75 * (1 - p));
+      const ang = t / 420 + (k / g.runes.length) * Math.PI * 2;
+      const d = g.R * (1.13 + 0.4 * p);
+      rune(ctx, RUNES[rn], g.p.x + Math.cos(ang) * d, g.p.y + Math.sin(ang) * d, 9, ang + Math.PI / 2, 0.9 * (1 - p));
     });
     return true;
   });
 
+  MG.motes = MG.motes.filter((m) => {
+    const age = t - m.at;
+    if (age >= m.life) return false;
+    if (age < 0) return true;
+    const p = age / m.life;
+    const x = m.x + m.vx * age, y = m.y + m.vy * age - p * p * 8;
+    const a = (1 - p) * (p < 0.1 ? p / 0.1 : 1);
+    const R = m.r * 3;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+    g.addColorStop(0, `rgba(${m.col}, ${0.95 * a})`);
+    g.addColorStop(1, `rgba(${m.col}, 0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x - R, y - R, R * 2, R * 2);
+    return true;
+  });
+  ctx.restore();
+}
+
+// The sigils where a card leaves the fan and where it lands, drawn behind
+// the cards: perfect circles that draw themselves in from the top, with an
+// inner ring, a six-pointed star and a ring of runes, turning as they fade.
+function drawFlights(ctx, t) {
   MG.flares = MG.flares.filter((f) => {
     const p = (t - f.at) / f.dur;
     if (p >= 1 || p < 0) return p < 0;
     const g = f.geom();
-    const a = swell(p);
-    const grow = 0.96 + p * 0.25;
-    ctx.strokeStyle = `rgba(255, 220, 160, ${0.55 * a})`;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.ellipse(g.x, g.y, (g.rx + 6) * grow, (g.ry + 6) * grow, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    const R = g.ry + 24;
-    const glow = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, R);
-    glow.addColorStop(0, `rgba(255, 226, 170, ${0.22 * a * f.size})`);
-    glow.addColorStop(1, "rgba(255, 226, 170, 0)");
-    ctx.fillStyle = glow;
-    ctx.fillRect(g.x - R, g.y - R, R * 2, R * 2);
+    const a = swell(p, 0.15);
+    const drawn = Math.min(1, p / 0.28);
+    const R = (f.small ? Math.max(g.rx, g.ry) * 1.05 : Math.hypot(g.rx, g.ry) * 1.04) * (0.94 + p * 0.1);
+    const spin = p * 0.9;
+    ctx.save();
+    // A flash of light at the centre.
+    const flash = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, R * 1.1);
+    flash.addColorStop(0, `rgba(255, 232, 180, ${0.5 * a})`);
+    flash.addColorStop(0.55, `rgba(200, 150, 255, ${0.14 * a})`);
+    flash.addColorStop(1, "rgba(200, 150, 255, 0)");
+    ctx.fillStyle = flash;
+    ctx.fillRect(g.x - R * 1.1, g.y - R * 1.1, R * 2.2, R * 2.2);
+    ctx.shadowColor = `rgba(255, 210, 130, ${a})`;
+    ctx.shadowBlur = 10;
+    sigilRing(ctx, g.x, g.y, R, drawn, 0.85 * a, 1.4);
+    sigilRing(ctx, g.x, g.y, R * 0.9, drawn, 0.5 * a, 0.9);
+    if (!f.small) {
+      // A six-pointed star inscribed in the inner ring.
+      ctx.strokeStyle = `rgba(255, 224, 165, ${0.4 * a * drawn})`;
+      ctx.lineWidth = 0.9;
+      for (let tri = 0; tri < 2; tri++) {
+        ctx.beginPath();
+        for (let k = 0; k <= 3; k++) {
+          const ang = spin + tri * Math.PI / 3 + (k / 3) * Math.PI * 2 - Math.PI / 2;
+          const X = g.x + Math.cos(ang) * R * 0.9, Y = g.y + Math.sin(ang) * R * 0.9;
+          k ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y);
+        }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
     f.runes.forEach((rn, k) => {
-      const ang = (k / f.runes.length) * Math.PI * 2 - Math.PI / 2 + p * 0.6;
-      const d = 0.9 + p * 0.3;
-      rune(ctx, RUNES[rn], g.x + Math.cos(ang) * (g.rx + 14) * d, g.y + Math.sin(ang) * (g.ry + 14) * d, 10, 0, 0.8 * a);
+      const ang = (k / f.runes.length) * Math.PI * 2 - Math.PI / 2 + spin;
+      if ((k + 0.5) / f.runes.length > drawn) return;   // runes appear as the ring reaches them
+      rune(ctx, RUNES[rn], g.x + Math.cos(ang) * R * 1.1, g.y + Math.sin(ang) * R * 1.1, 10, ang + Math.PI / 2, 0.9 * a);
     });
     return true;
   });
@@ -1071,10 +1154,11 @@ function frameBand(x, g, o, ins, r) {
 }
 
 // The slow flicker of the flame tips.
+// Low spatial frequencies give broad, rolling tongues rather than spikes.
 function flameNoise(x, y, t) {
-  return 0.45 * Math.sin(x * 0.31 + y * 0.47 + t / 320)
-    + 0.35 * Math.sin(x * 0.53 - y * 0.29 + t / 450 + 1.3)
-    + 0.2 * Math.sin(x * 0.17 + y * 0.71 + t / 240 + 4.1);
+  return 0.5 * Math.sin(x * 0.11 + y * 0.16 + t / 340)
+    + 0.32 * Math.sin(x * 0.19 - y * 0.12 + t / 470 + 1.3)
+    + 0.18 * Math.sin(x * 0.07 + y * 0.24 + t / 260 + 4.1);
 }
 
 // g = the card's box { x, y, w, h }; age = ms since the frame began.
@@ -1125,9 +1209,10 @@ function drawFrame(x, g, el, t, age, inset = FRAME_INSET) {
       for (let k = steps; k >= 0; k--) {
         const [px, py, nx, ny] = P(k / steps, -i + B * 0.15);
         const up = 0.4 + 0.6 * Math.max(0, -ny) + 0.2 * Math.abs(nx);   // tallest along the top
-        const peak = Math.pow(Math.max(0, flameNoise(px, py, t + li * 120) * 0.5 + 0.5), 2.2);
-        const hh = B * (sz * 0.7 + sz * 1.05 * amp * peak * up);
-        let dx = nx, dy = ny - 0.6 * up;
+        // Rounded crests (a gentle power), and kept low so the fire hugs the frame.
+        const peak = Math.pow(Math.max(0, flameNoise(px, py, t + li * 120) * 0.5 + 0.5), 1.25);
+        const hh = B * (sz * 0.6 + sz * 0.55 * amp * peak * up);
+        let dx = nx, dy = ny - 0.35 * up;
         const m = Math.hypot(dx, dy) || 1;
         x.lineTo(px + (dx / m) * hh, py + (dy / m) * hh);
       }
@@ -1380,6 +1465,7 @@ function startMagic() {
     const now = calm ? performance.now() + 10000 : t;   // reduced motion: draw everything already settled
     drawMagic(now);
     drawFrames(now);
+    if (MG.frx) drawFlightsTop(MG.frx, now);
     if (calm) { MG.running = false; return; }   // reduced motion: one still frame
     requestAnimationFrame(frame);
   });
@@ -2011,8 +2097,12 @@ function openSummary(entries, title, magic = false) {
   const back = el("button", "link", "‹ Back");
   bar.append(back, el("span", "bar-title", "Reading summary"), el("span", "bar-space"));
 
-  const body = el("div", "details-body");
-  body.append(el("h2", "summary-title", title));
+  // Two columns on a wide screen: the cards and the lens on the left,
+  // the reading on the right. On a phone they stack.
+  const body = el("div", "details-body two-col summary-page");
+  const side = el("div", "col-side"), main = el("div", "col-main");
+  body.append(side, main);
+  side.append(el("h2", "summary-title", title));
 
   // The cards, with the place each one holds in the chosen lens.
   const items = entries.map((e) => detailsItem(e.card, e.reversed, e.label, e.question || ""));
@@ -2031,16 +2121,25 @@ function openSummary(entries, title, magic = false) {
     row.append(b);
     return lab;
   });
-  body.append(row);
+  side.append(row);
 
-  // The lens buttons, and the parts that change with them.
+  // One lens at a time, stepped through with arrows (or the dots below),
+  // and the parts that change with it.
   const lenses = lensesFor(entries);
-  const chips = el("div", "chips lens-chips");
+  const lensBox = el("div", "lens");
+  const prev = el("button", "nav-btn", "‹"), next = el("button", "nav-btn", "›");
+  prev.setAttribute("aria-label", "Previous way of reading");
+  next.setAttribute("aria-label", "Next way of reading");
+  const lensName = el("p", "lens-name");
+  lensName.setAttribute("aria-live", "polite");
+  lensBox.append(prev, lensName, next);
+  const dots = el("div", "lens-dots");
   const lensPart = el("div");
   let current = 0;
   const render = () => {
     const lens = lenses[current];
-    [...chips.children].forEach((c, i) => c.classList.toggle("on", i === current));
+    if (lens) lensName.textContent = lens.name;
+    [...dots.children].forEach((c, i) => c.classList.toggle("on", i === current));
     entries.forEach((e, i) => { placeLabels[i].textContent = lens ? placeName(lens, i, e) : e.label || ""; });
     lensPart.innerHTML = "";
     if (!lens) return;
@@ -2058,14 +2157,16 @@ function openSummary(entries, title, magic = false) {
     if (pairs.length) lensPart.append(listSection("How the cards meet", pairs));
   };
   lenses.forEach((lens, i) => {
-    const c = el("button", "chip", lens.name);
-    c.addEventListener("click", () => { current = i; render(); });
-    chips.append(c);
+    const d = el("button");
+    d.setAttribute("aria-label", lens.name);
+    d.addEventListener("click", () => { current = i; render(); });
+    dots.append(d);
   });
-  if (lenses.length > 1) {
-    body.append(el("p", "lens-title", "Read it as"), chips);
-  }
-  body.append(lensPart);
+  const step = (k) => { current = (current + k + lenses.length) % lenses.length; render(); };
+  prev.addEventListener("click", () => step(-1));
+  next.addEventListener("click", () => step(1));
+  if (lenses.length > 1) side.append(el("p", "lens-title", "Read it as"), lensBox, dots);
+  main.append(lensPart);
   render();
 
   // The patterns, the story and the question don't depend on the lens.
@@ -2079,15 +2180,15 @@ function openSummary(entries, title, magic = false) {
   if (majors >= 2 && majors >= Math.ceil(n / 2)) lines.push("With so many Major cards, this is a meaningful chapter rather than a passing moment.");
   if (revs && revs >= Math.ceil(n / 2)) lines.push("Give what is still forming time and gentle attention.");
   lines.forEach((l) => story.append(el("p", "", l)));
-  body.append(story);
-  parts.forEach(([t, list]) => body.append(listSection(t, list)));
+  main.append(story);
+  parts.forEach(([t, list]) => main.append(listSection(t, list)));
 
   const asks = el("div", "asks summary-asks");
   asks.append(el("p", "asks-title", "The reading asks"));
   const ql = el("ul");
   ql.append(el("li", "", themes.length ? THEME_TEXT[themes[0]][2] : "What links these cards for you?"));
   asks.append(ql);
-  body.append(asks);
+  main.append(asks);
 
   sheet.append(bar, body);
   document.body.append(sheet);
@@ -2110,7 +2211,7 @@ function appearWithMagic(sheet, body) {
      { opacity: 1, filter: "blur(0) brightness(1)", transform: "none" }],
     { duration: 700, easing: "cubic-bezier(.2,.8,.2,1)" }
   );
-  [...body.children].forEach((part, i) => part.animate(
+  [...body.querySelectorAll(".col-side > *, .col-main > *")].forEach((part, i) => part.animate(
     [{ opacity: 0, transform: "translateY(16px)" }, { opacity: 1, transform: "none" }],
     { duration: 550, delay: 250 + i * 80, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }
   ));
@@ -2155,7 +2256,7 @@ function summonSummary(open) {
       const p = Math.min(1, Math.max(0, (t - m.delay) / 700));
       const e = 1 - Math.pow(1 - p, 3);
       const ang = m.end + (1 - e) * 2.2 + t / 900;
-      const tx = centre.x + Math.cos(ang) * R, ty = centre.y + Math.sin(ang) * R * 0.9;
+      const tx = centre.x + Math.cos(ang) * R, ty = centre.y + Math.sin(ang) * R;
       const x = m.x + (tx - m.x) * e, y = m.y + (ty - m.y) * e;
       const a = Math.min(1, p * 3) * (t < 1050 ? 1 : Math.max(0, 1 - (t - 1050) / 300));
       ctx.fillStyle = `rgba(255, 226, 170, ${0.35 * a})`;
@@ -2173,12 +2274,12 @@ function summonSummary(open) {
       ctx.strokeStyle = `rgba(255, 228, 175, ${0.7 * c})`;
       ctx.lineWidth = 1.4;
       ctx.beginPath();
-      ctx.ellipse(centre.x, centre.y, R * 1.12, R * 1.0, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * c);
+      ctx.arc(centre.x, centre.y, R * 1.06, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * c);
       ctx.stroke();
       ctx.setLineDash([2, 6]);
       ctx.lineDashOffset = -t / 30;
       ctx.beginPath();
-      ctx.ellipse(centre.x, centre.y, R * 0.82, R * 0.72, 0, 0, Math.PI * 2 * c);
+      ctx.arc(centre.x, centre.y, R * 0.8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * c);
       ctx.stroke();
       ctx.restore();
     }
@@ -2509,45 +2610,50 @@ function detailsItem(card, reversed = false, label = "", question = "") {
   return { card, reversed, label, question };
 }
 
+// On a wide screen the page has two columns: the card and what identifies
+// it on the left (staying in view), and its meanings and the rest on the
+// right. On a phone the two simply stack.
 function detailsBody({ card, reversed, label, question }) {
-  const body = el("div", "details-body");
+  const body = el("div", "details-body two-col");
+  const side = el("div", "col-side"), main = el("div", "col-main");
+  body.append(side, main);
   const pic = el("div", "details-card");
   const face = cardFace(card, false, reversed);
   face.style.height = "100%";
   pic.append(face);
-  body.append(pic);
+  side.append(pic);
 
-  if (label) body.append(el("p", "pos-label", label));
-  if (question) body.append(el("p", "pos-question", question));
-  body.append(el("h2", "", card.name));
-  if (reversed) body.append(el("p", "reversed-note", "Reversed"));
+  if (label) side.append(el("p", "pos-label", label));
+  if (question) side.append(el("p", "pos-question", question));
+  side.append(el("h2", "", card.name));
+  if (reversed) side.append(el("p", "reversed-note", "Reversed"));
   const tags = el("div", "tags");
   fillTags(tags, card);
   // Shared keywords sit under the name; separate ones go with each side.
   const keywords = el("p", "keywords");
   fillKeywords(keywords, hasRevKeywords(card) ? [] : card.keywords);
-  body.append(tags, keywords);
-  if ((card.line || "").trim()) body.append(el("p", "carry-line", card.line.trim()));
-  body.append(correspondences(card));
+  side.append(tags, keywords);
+  if ((card.line || "").trim()) side.append(el("p", "carry-line", card.line.trim()));
+  side.append(correspondences(card));
 
   // Upright and reversed meanings; the way the card fell comes first.
   const upright = meaning(card, false);
   const rev = (card.reversed || "").trim() ? meaning(card, true) : null;
-  if (reversed && rev) body.append(rev, upright);
-  else body.append(upright, ...(rev ? [rev] : []));
+  if (reversed && rev) main.append(rev, upright);
+  else main.append(upright, ...(rev ? [rev] : []));
 
   if (!hasRevQuestions(card)) {
     const asks = el("div", "asks");
     fillQuestions(asks, card.questions);
-    body.append(asks);
+    main.append(asks);
   }
   if ((card.details || "").trim()) {
     const text = el("div", "details-text");
     fillText(text, card.details, "");
-    body.append(text);
+    main.append(text);
   }
   [pictureGuide(card), notesBox(card), cardHistory(card), relatedCards(card)]
-    .forEach((part) => part && body.append(part));
+    .forEach((part) => part && main.append(part));
   return body;
 }
 
