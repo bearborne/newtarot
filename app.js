@@ -2628,25 +2628,25 @@ document.addEventListener("visibilitychange", () => { if (S && !$("table").hidde
 // links at all, the card's first (most central) keyword is used.
 
 const THEMES = {
-  beginnings: ["begin", "new ", "spark", "seed", "potential", "opportunit", "venture", "dawn", "readiness", "preparation", "groundwork", "inspiration"],
-  intuition:  ["intuition", "knowing", "dream", "subconscious", "mystery", "unknown", "imagination", "insight", "perception", "recepti", "sensitiv", "listening", "inner guidance", "inner teacher", "night mind", "beneath the surface"],
-  heart:      ["love", "heart", "feeling", "emotion", "compassion", "empathy", "romance", "connection", "union", "partnership", "attraction", "care", "kindness", "nurtur", "tender"],
-  together:   ["community", "friend", "family", "together", "belonging", "team", "collaborat", "cooperat", "sharing", "shared", "lineage", "heritage", "legacy", "group", "support", "partnership", "mutual"],
-  stillness:  ["rest", "stillness", "pause", "patience", "calm", "serenity", "peace", "retreat", "recovery", "restoration", "waiting", "letting be", "solitude", "replenish", "pacing", "delays"],
-  reflection: ["reflection", "introspection", "contemplation", "review", "re-evaluation", "assessment", "awareness", "discernment", "perspective", "wisdom", "questioning", "inner", "lessons"],
-  change:     ["change", "transformation", "transition", "ending", "closure", "release", "moving on", "rebirth", "turning", "cycles", "sudden", "breakthrough", "revelation", "clearing", "letting go", "surrender", "liberation", "unfinished", "last step"],
-  renewal:    ["renewal", "healing", "hope", "recovery", "rekindled", "restoration", "rebirth", "new dawn", "replenish", "faith", "serenity"],
+  beginnings: ["begin", "a new start", "spark", "seed", "potential", "opportunit", "venture", "dawn", "readiness", "preparation", "groundwork", "inspiration"],
+  intuition:  ["intuition", "inner knowing", "dream", "subconscious", "mystery", "unknown", "imagination", "insight", "perception", "recepti", "sensitiv", "listening", "inner guidance", "inner teacher", "night mind", "beneath the surface"],
+  heart:      ["love", "feelings, bonds", "feeling", "emotion", "compassion", "empathy", "romance", "connection", "union", "partnership", "attraction", "care", "kindness", "nurtur", "tender"],
+  together:   ["community", "support", "family", "together", "belonging", "team", "collaborat", "cooperat", "sharing", "shared", "lineage", "heritage", "legacy", "group", "support", "partnership", "mutual"],
+  stillness:  ["rest", "rest, patience", "pause", "patience", "calm", "serenity", "peace", "retreat", "recovery", "restoration", "waiting", "letting be", "solitude", "replenish", "pacing", "delays"],
+  reflection: ["reflection", "looking inward", "contemplation", "review", "re-evaluation", "assessment", "awareness", "discernment", "perspective", "wisdom", "questioning", "inner", "lessons"],
+  change:     ["change", "transition", "transition", "ending", "closure", "release", "moving on", "rebirth", "turning", "cycles", "sudden", "breakthrough", "revelation", "clearing", "letting go", "surrender", "liberation", "unfinished", "last step"],
+  renewal:    ["renewal", "healing, hope", "hope", "recovery", "rekindled", "restoration", "rebirth", "new dawn", "replenish", "faith", "serenity"],
   truth:      ["truth", "clarity", "honest", "clear", "fairness", "accountab", "reason", "principles", "integrity", "insight", "revelation", "unspoken", "mental fog"],
-  will:       ["will", "drive", "determination", "ambition", "action", "courage", "boldness", "conviction", "focus", "momentum", "energy", "passion", "fire", "speed", "standing firm", "persever", "persist", "resilience", "endurance", "strength"],
+  will:       ["will", "courage", "determination", "ambition", "action", "courage", "boldness", "conviction", "focus", "momentum", "energy", "passion", "fire", "speed", "standing firm", "persever", "persist", "resilience", "endurance", "strength"],
   structure:  ["structure", "stability", "security", "foundation", "discipline", "authority", "leadership", "control", "rigid", "routine", "responsibility", "boundaries", "tradition", "stewardship", "reliability", "steadiness", "conservation", "saving"],
-  abundance:  ["abundance", "prosperity", "wealth", "generosity", "giving", "receiving", "reward", "fulfilment", "contentment", "satisfaction", "gratitude", "enough", "pleasure", "comfort"],
-  craft:      ["skill", "craft", "mastery", "practice", "dedication", "diligence", "study", "learning", "effort", "work", "manifestation", "resourceful", "practical", "cultivation", "follow-through", "consistency"],
+  abundance:  ["abundance", "giving, receiving", "wealth", "generosity", "giving", "receiving", "reward", "fulfilment", "contentment", "satisfaction", "gratitude", "enough", "pleasure", "comfort"],
+  craft:      ["skill", "steady work", "mastery", "practice", "dedication", "diligence", "study", "learning", "effort", "work", "manifestation", "resourceful", "practical", "cultivation", "follow-through", "consistency"],
   joy:        ["joy", "celebration", "play", "pleasure", "happiness", "warmth", "vitality", "milestone", "enthusiasm", "innocence"],
-  freedom:    ["freedom", "liberation", "independence", "free spirit", "spontaneity", "adventure", "exploration", "journey", "discovery", "expansion", "unconventional", "seeking", "curiosity"],
-  shadow:     ["attachment", "habits", "desire", "doubt", "worry", "fear", "self-limiting", "defensive", "conflict", "grief", "heartache", "exhaustion", "weariness", "isolation", "restless", "impatience", "perfectionism", "rigid", "urgency", "friction", "hesitation"],
+  freedom:    ["freedom", "curiosity", "independence", "free spirit", "spontaneity", "adventure", "exploration", "journey", "discovery", "expansion", "unconventional", "seeking", "curiosity"],
+  shadow:     ["attachment", "tender places", "desire", "doubt", "worry", "fear", "self-limiting", "defensive", "conflict", "grief", "heartache", "exhaustion", "weariness", "isolation", "restless", "impatience", "perfectionism", "rigid", "urgency", "friction", "hesitation"],
   balance:    ["balance", "harmony", "moderation", "alignment", "adaptability", "flexibility", "priorities", "juggling", "integration", "wholeness", "heart and mind", "realignment"],
-  choice:     ["choice", "choos", "decision", "options", "weighing", "direction", "planning", "vision", "foresight", "intention", "discernment", "crossroad"],
-  self:       ["self-", "worth", "confidence", "authenticity", "recognition", "visibility", "personal truth", "embodiment", "inner child", "validation"],
+  choice:     ["choice", "direction", "decision", "options", "weighing", "direction", "planning", "vision", "foresight", "intention", "discernment", "crossroad"],
+  self:       ["self-", "self-value", "confidence", "authenticity", "recognition", "visibility", "personal truth", "embodiment", "inner child", "validation"],
 };
 
 function themesOf(keyword) {
@@ -2684,67 +2684,35 @@ function linkedKeyword(entry, spread) {
 // their elements, numbers, stars and pictures, and what that adds up to.
 
 const THEME_TEXT = {
-  beginnings: ["Beginnings", "Something new is asking to be started or welcomed.", "What is ready to begin?"],
-  intuition:  ["Intuition", "Inner knowing and dreams are speaking; listening inward is part of the answer.", "What do you already sense, beneath the thinking?"],
-  heart:      ["The heart", "Feelings and relationships sit at the centre of this reading.", "What is your heart asking for?"],
-  together:   ["Belonging", "Other people, community and support play a part here.", "Who walks this part of the path with you?"],
-  stillness:  ["Stillness", "Rest, patience and pause return again and again.", "Where could a pause serve you more than a push?"],
-  reflection: ["Reflection", "The reading turns inward, toward awareness and honest review.", "What becomes clear when you look inward?"],
-  change:     ["Change", "Something is transforming; endings and transitions make room for what comes next.", "What is ready to change, and what is it making room for?"],
-  renewal:    ["Renewal", "Healing and hope run through the cards.", "What is quietly healing in you?"],
-  truth:      ["Truth and clarity", "Honesty and clear seeing are being asked for.", "What truth would set things in order?"],
-  will:       ["Will and action", "Energy, courage and drive are there to move things forward.", "Where does your energy want to go?"],
-  structure:  ["Foundations", "Structure, boundaries and responsibility are in focus.", "What foundation would help you feel secure?"],
-  abundance:  ["Abundance", "Giving, receiving and contentment are recurring threads.", "What are you ready to receive?"],
-  craft:      ["Craft and effort", "Skill, practice and steady work are part of the path.", "What deserves your patient effort?"],
-  joy:        ["Joy", "Celebration and lightness are close at hand.", "What could you let yourself enjoy?"],
-  freedom:    ["Exploration", "Curiosity and the wish to explore are calling.", "Where is curiosity leading you?"],
-  shadow:     ["Inner work", "Some cards point to tender places, doubts, attachments or weariness, that are ready to be seen with kindness.", "What tender place is ready to be met with kindness?"],
-  balance:    ["Balance", "Harmony and gentle adjustment between different parts of life.", "What needs rebalancing?"],
-  choice:     ["Choice and direction", "A direction is being chosen; vision and intention matter.", "Which direction feels true to you?"],
-  self:       ["Self-worth", "How you see and value yourself is part of the story.", "How could you value yourself a little more?"],
+  beginnings: ["Beginnings", "something to start", "What is ready to begin?"],
+  intuition:  ["Intuition", "inner knowing", "What do you already sense, beneath the thinking?"],
+  heart:      ["Heart", "feelings, bonds", "What is your heart asking for?"],
+  together:   ["Belonging", "others, support", "Who walks this part of the path with you?"],
+  stillness:  ["Stillness", "rest, patience", "Where could a pause serve you more than a push?"],
+  reflection: ["Reflection", "looking inward", "What becomes clear when you look inward?"],
+  change:     ["Change", "endings, transitions", "What is ready to change, and what is it making room for?"],
+  renewal:    ["Renewal", "healing, hope", "What is quietly healing in you?"],
+  truth:      ["Truth", "honesty, clarity", "What truth would set things in order?"],
+  will:       ["Will", "energy, courage", "Where does your energy want to go?"],
+  structure:  ["Foundations", "stability, limits", "What foundation would help you feel secure?"],
+  abundance:  ["Abundance", "giving, receiving", "What are you ready to receive?"],
+  craft:      ["Craft", "skill, steady work", "What deserves your patient effort?"],
+  joy:        ["Joy", "celebration", "What could you let yourself enjoy?"],
+  freedom:    ["Exploration", "curiosity", "Where is curiosity leading you?"],
+  shadow:     ["Inner work", "tender places", "What tender place is ready to be met with kindness?"],
+  balance:    ["Balance", "harmony", "What needs rebalancing?"],
+  choice:     ["Choice", "direction", "Which direction feels true to you?"],
+  self:       ["Self-worth", "how you value yourself", "How could you value yourself a little more?"],
 };
 
-const ELEMENT_TEXT = {
-  Fire:  "passion, will and creative energy",
-  Water: "feelings, intuition and relationships",
-  Air:   "thought, truth and communication",
-  Earth: "the body, work, home and the material world",
-};
+const ELEMENT_TEXT = { Fire: "passion, will", Water: "feelings, dreams", Air: "thought, truth", Earth: "the body, work" };
 
 const NUMBER_TEXT = {
-  1: "beginnings and pure potential", 2: "balance, choice and partnership", 3: "growth, creation and collaboration",
-  4: "stability, rest and structure", 5: "challenge and change", 6: "harmony, giving and moving on",
-  7: "reflection and inner work", 8: "movement, mastery and inner power", 9: "ripening and near completion",
-  10: "completion and the start of a new cycle",
+  1: "beginnings", 2: "balance, choice", 3: "growth", 4: "stability", 5: "challenge",
+  6: "harmony", 7: "reflection", 8: "mastery", 9: "near completion", 10: "completion",
 };
 
-const RANK_TEXT = {
-  Page: "messages, study and fresh starts", Knight: "movement and pursuit",
-  Queen: "inner mastery and nurturing", King: "outer mastery and leadership",
-};
-
-// Things in the pictures, and what they stand for.
-const SYMBOLS = [
-  ["water", /\b(water|pool|stream|river|pond|streams)\b/, "feeling and the flow of the unconscious"],
-  ["the moon", /\b(moon|crescent)\b/, "intuition, cycles and what is hidden"],
-  ["the sun", /\b(sun|sunflowers?)\b/, "clarity, vitality and awareness"],
-  ["stars", /\bstars?\b/, "hope and guidance"],
-  ["mountains", /\b(mountains?|peaks?|cliff)\b/, "challenge and a higher view"],
-  ["trees and growth", /\b(tree|vines?|garden|wheat|leaves|wood)\b/, "growth and rootedness"],
-  ["clouds", /\bclouds?\b/, "the unseen, spirit and gifts from beyond"],
-  ["the sea", /\b(sea|ships?|boat|waves)\b/, "the depths of feeling and life's movement"],
-  ["flowers", /\b(flowers?|roses?|lil(y|ies)|lotus|garland)\b/, "blossoming, beauty and purity"],
-  ["crowns", /\bcrown(ed)?\b/, "mastery and higher purpose"],
-  ["lions", /\blions?\b/, "courage and instinct"],
-  ["horses", /\bhorses?\b/, "movement and drive"],
-  ["dogs and wolves", /\b(dogs?|wolf)\b/, "loyalty and instinct"],
-  ["children", /\b(child|children)\b/, "innocence and new life"],
-  ["angels", /\bangel('s)?\b/, "guidance and blessing"],
-  ["pillars and thresholds", /\b(pillars?|arch(way)?|gateway)\b/, "thresholds and the meeting of opposites"],
-  ["paths and bridges", /\b(path|road|bridge)\b/, "the journey ahead"],
-  ["castles and homes", /\b(castle|town|city|house|home|houses)\b/, "security and what has been built"],
-];
+const RANK_TEXT = { Page: "messages, study", Knight: "pursuit", Queen: "inner mastery", King: "outer mastery" };
 
 const isMajorCard = (card) => CARDS.indexOf(card) < 22;
 
@@ -2858,36 +2826,21 @@ const placeName = (lens, i, entry) => (lens.own ? entry.label : PLACES[lens.plac
 
 // ── How neighbouring cards meet ─────────────────────────
 
-const ELEMENT_PAIRS = {
-  "Fire+Fire": "passion doubles and burns brighter",
-  "Water+Water": "feeling deepens",
-  "Air+Air": "thought sharpens",
-  "Earth+Earth": "steadiness builds on steadiness",
-  "Air+Fire": "ideas fan the flame, giving energy a direction",
-  "Earth+Water": "feeling finds form and nourishment",
-  "Fire+Water": "passion and feeling pull against each other and ask for balance",
-  "Air+Earth": "ideas meet practical reality and ask to be grounded",
-  "Earth+Fire": "drive slowly becomes something real",
-  "Air+Water": "feelings look for words",
-};
-
 const numberOf = (card) => (card.court ? null : +((card.correspondences || {}).number || NaN));
 
 function pairLine(a, b, nameA, nameB) {
   const bits = [];
-  const ea = elementOf(a.card), eb = elementOf(b.card);
-  if (ea && eb) bits.push(ELEMENT_PAIRS[[ea, eb].sort().join("+")]);
   const na = numberOf(a.card), nb = numberOf(b.card);
   const minorA = !isMajorCard(a.card), minorB = !isMajorCard(b.card);
   if (minorA && minorB && na >= 1 && nb >= 1) {
-    if (nb === na + 1) bits.push("the numbers climb, a natural step forward");
-    else if (nb === na) bits.push("the same number sounds twice, so its lesson is underlined");
-    else if (nb < na) bits.push("the numbers step back, returning to an earlier stage");
+    if (nb === na + 1) bits.push("numbers climb: a step forward");
+    else if (nb === na) bits.push("same number: its lesson underlined");
+    else if (nb < na) bits.push("numbers fall: an earlier stage");
   }
-  if (!minorA && minorB) bits.push("a larger lesson arrives in everyday life");
-  if (minorA && !minorB) bits.push("an everyday matter opens onto something larger");
-  if (!a.reversed && b.reversed) bits.push("the energy turns inward");
-  if (a.reversed && !b.reversed) bits.push("what was held back begins to flow");
+  if (!minorA && minorB) bits.push("a big lesson enters daily life");
+  if (minorA && !minorB) bits.push("a daily matter opens up");
+  if (!a.reversed && b.reversed) bits.push("energy turns inward");
+  if (a.reversed && !b.reversed) bits.push("held energy flows");
   if (!bits.length) return null;
   const text = bits.slice(0, 2).join("; ");
   return { head: `${nameA} → ${nameB}`, text: text.charAt(0).toUpperCase() + text.slice(1) + "." };
@@ -2901,27 +2854,27 @@ function storyLines(entries) {
   const key = entries.map((e) => linkedKeyword(e, entries));
   const first = themes[0], last = themes[n - 1];
   const lines = [];
-  if (n === 2) lines.push(`It starts with ${key[0]} and leads toward ${key[1]}.`);
+  if (n === 2) lines.push(`${cap(key[0])} → ${key[1]}.`);
   else if (n > 2) {
     const mid = key[Math.floor((n - 1) / 2)];
-    lines.push(`It starts with ${key[0]}, turns on ${mid}, and leads toward ${key[n - 1]}.`);
+    lines.push(`${cap(key[0])} → ${mid} → ${key[n - 1]}.`);
   }
   const has = (set, ...ts) => ts.some((t) => set.has(t));
   if (n > 1) {
     if (has(first, "change", "shadow") && has(last, "renewal", "beginnings", "joy")) {
-      lines.push("The arc runs from an ending or a hard place toward renewal.");
+      lines.push("From a hard place to renewal.");
     } else if (has(first, "stillness", "shadow", "reflection") && has(last, "will", "freedom", "beginnings")) {
-      lines.push("The arc runs from stillness toward movement: what has been resting is ready to act.");
+      lines.push("From rest to action.");
     } else if (has(first, "will", "freedom") && has(last, "stillness", "reflection")) {
-      lines.push("The arc runs from action toward rest: after the effort comes reflection.");
+      lines.push("From effort to rest.");
     } else if (has(first, "heart", "together") && has(last, "self", "freedom")) {
-      lines.push("The arc runs from others toward yourself: connection becomes self-knowledge.");
+      lines.push("From others to yourself.");
     }
     const half = Math.ceil(n / 2);
     const earlyRev = entries.slice(0, half).filter((e) => e.reversed).length;
     const lateRev = entries.slice(half).filter((e) => e.reversed).length;
-    if (earlyRev && !lateRev) lines.push("Reversed cards come early and upright ones later: things are opening up.");
-    if (!earlyRev && lateRev) lines.push("Upright cards come first and reversed ones later: the reading turns inward as it goes.");
+    if (earlyRev && !lateRev) lines.push("Reversed early, upright late: opening up.");
+    if (!earlyRev && lateRev) lines.push("Upright early, reversed late: turning inward.");
   }
   return lines;
 }
@@ -2931,78 +2884,329 @@ function storyLines(entries) {
 // places and patterns instead.
 
 const countOf = (k, n) => (n === 2 && k === 2 ? "both cards" : `${k} of the ${n} cards`);
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// The places (0, 1, 2…) of the cards in a spread that pass a test.
+const whichCards = (entries, test) => entries.map((e, i) => (test(e, i) ? i : -1)).filter((i) => i >= 0);
+
+// The themes each card's keywords touch, one set per card.
+const themeSets = (entries) =>
+  entries.map((e) => new Set(filled(keywordsFor(e.card, e.reversed)).map((w) => w.toLowerCase()).flatMap(themesOf)));
+
+// A section of the summary. Its items are either list lines
+// { head, text, cards } or, with tiles: true, small tiles seen at a glance:
+// { top, n, main, note, tone, cards } — e.g. n 2, main "crowns".
+// perCard: one tile per card, lined up like the row of cards.
+// Every item's `cards` are the places it is found in, so tapping it can
+// light them up (see the threads in openSummary).
+const part = (title, items, opts = {}) => ({ title, items, ...opts });
+
+const NUMBER_WORDS = ["", "aces", "twos", "threes", "fours", "fives", "sixes", "sevens", "eights", "nines", "tens"];
+const ELEMENTS = ["Fire", "Water", "Air", "Earth"];
 
 function patternParts(entries) {
   const n = entries.length;
   const parts = [];
   const kw = entries.map((e) => filled(keywordsFor(e.card, e.reversed)).map((w) => w.toLowerCase()));
+  const sets = themeSets(entries);
+  const tally = (lists) => {
+    const c = {};
+    lists.forEach((s) => new Set(s).forEach((x) => (c[x] = (c[x] || 0) + 1)));
+    return c;
+  };
+  const top = (c, k) => Object.keys(c).filter((x) => c[x] >= 2).sort((a, b) => c[b] - c[a]).slice(0, k);
 
-  // Themes, by how many cards touch them.
-  const themeCount = {};
-  kw.forEach((words) => new Set(words.flatMap(themesOf)).forEach((t) => (themeCount[t] = (themeCount[t] || 0) + 1)));
-  const themes = Object.keys(themeCount).filter((t) => themeCount[t] >= 2)
-    .sort((a, b) => themeCount[b] - themeCount[a]).slice(0, 4);
+  // Themes.
+  const themeCount = tally(sets);
+  const themes = top(themeCount, 4);
   if (themes.length) {
-    parts.push(["Repeating themes", themes.map((t) =>
-      ({ head: THEME_TEXT[t][0], text: `${THEME_TEXT[t][1]} In ${countOf(themeCount[t], n)}.` }))]);
+    parts.push(part("Themes", themes.map((t) => ({
+      n: themeCount[t], main: THEME_TEXT[t][0], note: THEME_TEXT[t][1],
+      cards: whichCards(entries, (e, i) => sets[i].has(t)),
+    })), { tiles: true }));
   }
 
   // Words shared by two or more cards: whole keywords, or words inside them.
   const STOP = new Set(["with", "from", "into", "your", "self", "that", "the", "and", "what", "inner", "new"]);
-  const wordCount = {};
-  kw.forEach((words) => {
-    const seen = new Set();
+  const seen = kw.map((words) => {
+    const s = new Set();
     words.forEach((k) => {
-      seen.add(k);
-      k.split(/[\s-]+/).filter((w) => w.length > 3 && !STOP.has(w)).forEach((w) => seen.add(w));
+      s.add(k);
+      k.split(/[\s-]+/).filter((w) => w.length > 3 && !STOP.has(w)).forEach((w) => s.add(w));
     });
-    seen.forEach((w) => (wordCount[w] = (wordCount[w] || 0) + 1));
+    return s;
   });
+  const wordCount = tally(seen);
   const words = Object.keys(wordCount).filter((w) => wordCount[w] >= 2)
     .sort((a, b) => wordCount[b] - wordCount[a] || b.length - a.length);
-  const shown = words.filter((w) => !words.some((o) => o !== w && o.includes(w) && wordCount[o] === wordCount[w])).slice(0, 5);
-  if (shown.length) parts.push(["Repeating words", shown.map((w) => ({ head: w, text: `In ${countOf(wordCount[w], n)}.` }))]);
+  const shown = words.filter((w) => !words.some((o) => o !== w && o.includes(w) && wordCount[o] === wordCount[w])).slice(0, 6);
+  if (shown.length) {
+    parts.push(part("Shared words", shown.map((w) => ({
+      n: wordCount[w], main: w, cards: whichCards(entries, (e, i) => seen[i].has(w)),
+    })), { tiles: true }));
+  }
 
-  // Symbolism.
-  const sym = [];
+  // What's in the pictures (symbols.js).
+  const pics = entries.map((e) => new Set((PICTURES[e.card.name] || {}).symbols || []));
+  const symCount = tally(pics);
+  const syms = top(symCount, 6).filter((x) => SYMBOLS[x]);
+  if (syms.length) {
+    parts.push(part("In the pictures", syms.map((x) => ({
+      n: symCount[x], main: SYMBOLS[x].name, note: SYMBOLS[x].meaning,
+      cards: whichCards(entries, (e, i) => pics[i].has(x)),
+    })), { tiles: true }));
+  }
+
+  // Elements: all four, the missing ones dimmed.
   const els = {};
-  entries.forEach((e) => { const x = elementOf(e.card); if (x) els[x] = (els[x] || 0) + 1; });
+  entries.forEach((e) => { const x = elementFor(e.card); if (x) els[x] = (els[x] || 0) + 1; });
   const topEl = Object.keys(els).sort((a, b) => els[b] - els[a])[0];
-  if (topEl && els[topEl] >= 2) sym.push({ head: topEl, text: `${countOf(els[topEl], n)} belong to ${topEl}: ${ELEMENT_TEXT[topEl]}.` });
-  if (n >= 4) {
-    const missing = Object.keys(ELEMENT_TEXT).filter((x) => !els[x]);
-    if (missing.length === 1) sym.push({ head: `No ${missing[0]}`, text: `${missing[0]}, ${ELEMENT_TEXT[missing[0]]}, is quiet here; it may be what to bring in.` });
+  if (n >= 2) {
+    parts.push(part("Elements", [...ELEMENTS].sort((a, b) => (els[b] || 0) - (els[a] || 0)).map((x) => ({
+      n: els[x] || 0, main: x, note: els[x] ? ELEMENT_TEXT[x].split(",")[0] : "missing",
+      tone: els[x] ? (els[x] >= 2 && x === topEl ? "good" : "") : "quiet",
+      cards: whichCards(entries, (e) => elementFor(e.card) === x),
+    })), { tiles: true, cols: 4 }));
   }
-  const majors = entries.filter((e) => isMajorCard(e.card)).length;
-  if (majors >= 2 && majors >= Math.ceil(n / 2)) {
-    sym.push({ head: "Major Arcana", text: `${countOf(majors, n)} are Major Arcana: this touches deeper life lessons, beyond day-to-day matters.` });
-  } else if (!majors && n >= 3) {
-    sym.push({ head: "Minor Arcana only", text: "Every card is a Minor card: this lies within everyday life, where your own choices shape it." });
-  }
-  const nums = {};
-  entries.forEach((e) => { const x = numberOf(e.card); if (x >= 1 && x <= 10) nums[x] = (nums[x] || 0) + 1; });
-  Object.keys(nums).filter((k) => nums[k] >= 2).forEach((k) =>
-    sym.push({ head: `The number ${k}`, text: `${countOf(nums[k], n)} share it: ${NUMBER_TEXT[k]}.` }));
-  const ranks = {};
-  entries.filter((e) => e.card.court).forEach((e) => { const r = e.card.name.split(" ")[0]; ranks[r] = (ranks[r] || 0) + 1; });
-  Object.keys(ranks).filter((r) => ranks[r] >= 2).forEach((r) =>
-    sym.push({ head: `${r}s`, text: `${countOf(ranks[r], n)} are ${r}s: ${RANK_TEXT[r]}.` }));
-  const stars = {};
-  entries.forEach((e) => starsOf(e.card).forEach((s) => (stars[s] = (stars[s] || 0) + 1)));
-  Object.keys(stars).filter((s) => stars[s] >= 2).forEach((s) => {
-    const name = s === "Sun" || s === "Moon" ? `the ${s}` : s;
-    sym.push({ head: `Under ${name}`, text: `${countOf(stars[s], n)} share ${name} in their astrology.` });
-  });
-  SYMBOLS.forEach(([name, re, meaning]) => {
-    const k = entries.filter((e) => filled(e.card.picture).some((p) => re.test(p.toLowerCase()))).length;
-    if (k >= 2) sym.push({ head: name, text: `In ${k} of the pictures: ${meaning}.` });
-  });
-  const revs = entries.filter((e) => e.reversed).length;
-  if (revs && revs >= Math.ceil(n / 2)) {
-    sym.push({ head: "Reversed cards", text: `${countOf(revs, n)} are reversed: much of this is happening inwardly, still forming or asking for attention.` });
-  }
-  if (sym.length) parts.push(["Symbolism", sym.slice(0, 7)]);
+
+  // Symbolism: Major cards, numbers, ranks, stars, reversals.
+  const sym = [];
+  const majorCards = whichCards(entries, (e) => isMajorCard(e.card));
+  const majors = majorCards.length;
+  if (majors >= 2 && majors >= Math.ceil(n / 2)) sym.push({ n: majors, main: "Major", note: "life lessons", cards: majorCards });
+  else if (!majors && n >= 3) sym.push({ n: 0, main: "Major", note: "everyday matters", tone: "quiet" });
+  const nums = tally(entries.map((e) => { const x = numberOf(e.card); return x >= 1 && x <= 10 ? [x] : []; }));
+  top(nums, 3).forEach((k) => sym.push({ n: nums[k], main: NUMBER_WORDS[k], note: NUMBER_TEXT[k],
+    cards: whichCards(entries, (e) => numberOf(e.card) === +k) }));
+  const ranks = tally(entries.map((e) => (e.card.court ? [rankOf(e.card)] : [])));
+  top(ranks, 4).forEach((r) => sym.push({ n: ranks[r], main: `${r}s`, note: RANK_TEXT[r],
+    cards: whichCards(entries, (e) => e.card.court && rankOf(e.card) === r) }));
+  const stars = tally(entries.map((e) => starsOf(e.card)));
+  top(stars, 3).forEach((s) => sym.push({ n: stars[s], main: s, note: "astrology",
+    cards: whichCards(entries, (e) => starsOf(e.card).includes(s)) }));
+  const revCards = whichCards(entries, (e) => e.reversed);
+  const revs = revCards.length;
+  if (revs && revs >= Math.ceil(n / 2)) sym.push({ n: revs, main: "reversed", note: "still forming", cards: revCards });
+  if (sym.length) parts.push(part("Symbolism", sym.slice(0, 8), { tiles: true }));
   return { parts, themes, topEl, els, majors, revs };
+}
+
+// ── Deeper patterns: how the cards act on each other ────
+// These name the cards by their place in the spread, so they follow
+// the lens: nameOf(i) gives the name of place i.
+
+// Elemental dignities (Golden Dawn): a card is strengthened or weakened
+// by the elements of the cards beside it. The same element strengthens
+// most; Fire and Air are friends, and so are Water and Earth; Fire and
+// Water oppose, as do Air and Earth; Fire–Earth and Air–Water are neutral.
+// Major cards ruled by a planet take that planet's element (elementFor).
+function affinity(a, b) {
+  if (a === b) return 2;
+  const k = [a, b].sort().join("+");
+  if (k === "Air+Fire" || k === "Earth+Water") return 1;
+  if (k === "Fire+Water" || k === "Air+Earth") return -2;
+  return 0;
+}
+const DIGNITY_TONE = { strong: "good", supported: "good", bridge: "good", mixed: "mixed", weakened: "bad", neutral: "quiet" };
+
+function dignityTiles(entries, nameOf) {
+  const n = entries.length;
+  if (n < 2) return [];
+  const els = entries.map((e) => elementFor(e.card));
+  const tiles = entries.map((e, i) => {
+    const me = els[i];
+    const nb = [i - 1, i + 1].filter((j) => j >= 0 && j < n && els[j]);
+    const score = (j) => affinity(me, els[j]);
+    const friends = nb.filter((j) => score(j) >= 1), foes = nb.filter((j) => score(j) < 0);
+    const sum = nb.reduce((t, j) => t + score(j), 0);
+    const state = !me || !nb.length ? "neutral"
+      : nb.length === 2 && friends.length === 2 && affinity(els[nb[0]], els[nb[1]]) < 0 ? "bridge"
+      : friends.length && foes.length ? "mixed"
+      : foes.length ? "weakened"
+      : sum >= 3 || (nb.length === 1 && sum >= 2) ? "strong"
+      : friends.length ? "supported" : "neutral";
+    return { top: nameOf(i), main: me || "—", note: state, tone: DIGNITY_TONE[state], cards: [...nb, i].sort((a, b) => a - b) };
+  });
+  return tiles.some((t) => t.note !== "neutral") ? tiles : [];
+}
+const DIGNITY_KEY = "Fire+Air and Water+Earth help · Fire+Water and Air+Earth clash · a bridge joins two that clash";
+
+// Where the figures look. The spread is laid out left to right, so a
+// figure looking right looks toward the next card, one looking left
+// toward the card before. A reversed card turns its gaze around.
+function facingOf(e) {
+  const f = (PICTURES[e.card.name] || {}).facing || "";
+  if (!e.reversed) return f;
+  return f === "left" ? "right" : f === "right" ? "left" : f;
+}
+
+function gazePart(entries, nameOf) {
+  const n = entries.length;
+  const f = entries.map(facingOf);
+  if (n < 2 || !f.some(Boolean)) return null;
+  const tiles = f.map((d, i) => ({
+    top: nameOf(i),
+    main: { left: "←", right: "→", back: "↑" }[d] || "·",
+    note: d === "left" ? (i ? "back" : "outward")
+      : d === "right" ? (i < n - 1 ? "ahead" : "beyond")
+      : d === "back" ? "away" : "",
+    tone: d ? "" : "quiet",
+    cards: d === "left" && i ? [i - 1, i] : d === "right" && i < n - 1 ? [i, i + 1] : [i],
+  }));
+  const list = [];
+  const lefts = whichCards(entries, (e, i) => f[i] === "left");
+  const rights = whichCards(entries, (e, i) => f[i] === "right");
+  if (n >= 3 && lefts.length >= Math.ceil(n * 0.6)) list.push({ head: "Most look back", text: "The past holds the attention.", cards: lefts });
+  else if (n >= 3 && rights.length >= Math.ceil(n * 0.6)) list.push({ head: "Most look ahead", text: "The reading leans forward.", cards: rights });
+  for (let i = 0; i < n - 1; i++) {
+    if (f[i] === "right" && f[i + 1] === "left") list.push({ head: `${nameOf(i)} → ← ${nameOf(i + 1)}`, text: "Face to face: read them together.", cards: [i, i + 1] });
+    if (f[i] === "left" && f[i + 1] === "right") list.push({ head: `${nameOf(i)} ← → ${nameOf(i + 1)}`, text: "Back to back: not yet speaking.", cards: [i, i + 1] });
+  }
+  return part("Gaze", tiles, { tiles: true, perCard: true, list });
+}
+
+// Cards that mirror each other: the same force seen from two sides.
+const MIRRORS = [
+  ["The Magician", "The High Priestess", "doing and knowing"],
+  ["The Empress", "The Emperor", "nurture and structure"],
+  ["The High Priestess", "The Hierophant", "inner and taught wisdom"],
+  ["The Lovers", "The Devil", "a chosen bond, a binding one"],
+  ["The Chariot", "Strength", "force and gentleness"],
+  ["Justice", "The Hanged Man", "deciding and surrendering"],
+  ["Death", "Judgement", "an ending, then an awakening"],
+  ["Temperance", "The Devil", "moderation and excess"],
+  ["The Tower", "The Star", "the fall, then hope"],
+  ["The Moon", "The Sun", "fear and clarity"],
+  ["The Fool", "The World", "the start and the completion"],
+  ["Wheel of Fortune", "The World", "a turn and an arrival"],
+];
+
+// Themes that pull against each other when different cards carry them.
+const TENSIONS = [
+  ["stillness", "will", "Rest ↔ action", "pause or push?", "How could rest and action both have their place?"],
+  ["freedom", "structure", "Freedom ↔ roots", "roam or settle?", "How could you be free and still feel held?"],
+  ["heart", "truth", "Heart ↔ head", "feeling and thinking disagree", "Where do your heart and your head disagree?"],
+  ["joy", "shadow", "Joy ↔ hurt", "both are here", "Can joy and what still hurts sit side by side?"],
+  ["self", "together", "Self ↔ others", "both need room", "How could you honour yourself and the people around you?"],
+  ["change", "structure", "Change ↔ stability", "move or hold?", "What needs to change, and what needs to stay?"],
+  ["intuition", "craft", "Dream ↔ work", "vision needs practice", "How could a dream be given a practical first step?"],
+];
+
+function tensionsOf(entries) {
+  const sets = themeSets(entries);
+  return TENSIONS.map(([a, b, head, text, ask]) => {
+    const A = whichCards(entries, (e, i) => sets[i].has(a) && !sets[i].has(b));
+    const B = whichCards(entries, (e, i) => sets[i].has(b) && !sets[i].has(a));
+    return A.length && B.length ? { head, text, ask, cards: [...A, ...B].sort((x, y) => x - y) } : null;
+  }).filter(Boolean).slice(0, 2);
+}
+
+function mirrorItems(entries, nameOf) {
+  const items = [];
+  const sorted = (...xs) => xs.sort((x, y) => x - y);
+  const at = (name) => entries.findIndex((e) => e.card.name === name);
+  MIRRORS.forEach(([a, b, text]) => {
+    const i = at(a), j = at(b);
+    if (i >= 0 && j >= 0) items.push({ head: `${a} ↔ ${b}`, text: `${cap(text)}.`, cards: sorted(i, j) });
+  });
+  // The beginning and the end of a suit; the inner and outer mastery of an element.
+  entries.forEach((e, i) => {
+    const suit = e.card.name.split(" of ")[1];
+    if (!suit) return;
+    entries.forEach((g, j) => {
+      if (j === i || g.card.name.split(" of ")[1] !== suit) return;
+      if (e.card.name.startsWith("Ace") && g.card.name.startsWith("Ten")) {
+        items.push({ head: `Ace ↔ Ten of ${suit}`, text: "Seed to harvest.", cards: sorted(i, j) });
+      }
+      if (rankOf(e.card) === "Queen" && rankOf(g.card) === "King") {
+        items.push({ head: `Queen ↔ King of ${suit}`, text: "Inner and outer mastery.", cards: sorted(i, j) });
+      }
+    });
+  });
+  // A Major card's number echoed by a Minor card.
+  entries.forEach((e, i) => {
+    const k = CARDS.indexOf(e.card);
+    if (k < 1 || k > 10) return;
+    const echo = whichCards(entries, (g) => !isMajorCard(g.card) && numberOf(g.card) === k);
+    if (echo.length) items.push({ head: `${k} ↔ ${k}`, text: `${nameOf(i)} echoed by ${listNames(echo.map(nameOf))}: the big lesson in daily life.`, cards: sorted(i, ...echo) });
+  });
+  tensionsOf(entries).forEach(({ head, text, cards }) => items.push({ head, text: cap(text) + (/[?.]$/.test(text) ? "" : "."), cards }));
+  return items.slice(0, 5);
+}
+
+// ── Numbers: the hidden card and the arcs ───────────────
+// Every card has a number: the Major cards their own (The Fool is 0),
+// the Minor cards their pips, and the court cards Page 11, Knight 12,
+// Queen 13, King 14. Their sum, reduced by adding its digits until it
+// is 21 or less, names a Major card: the card behind the reading.
+const COURT_NUMBER = { Page: 11, Knight: 12, Queen: 13, King: 14 };
+function cardValue(card) {
+  if (isMajorCard(card)) return CARDS.indexOf(card);
+  if (card.court) return COURT_NUMBER[rankOf(card)];
+  return numberOf(card);
+}
+
+function hiddenCard(entries) {
+  if (entries.length < 2) return null;
+  const vals = entries.map((e) => cardValue(e.card));
+  if (vals.some((v) => !(v >= 0))) return null;
+  let s = vals.reduce((a, b) => a + b, 0);
+  const steps = [s];
+  while (s > 21) { s = String(s).split("").reduce((a, d) => a + +d, 0); steps.push(s); }
+  const card = CARDS[s];
+  return {
+    card,
+    sum: `${vals.join(" + ")} = ${steps.join(" → ")}`,
+    courts: entries.some((e) => e.card.court),
+    inSpread: whichCards(entries, (e) => e.card === card),
+  };
+}
+
+// The Fool's journey through the Major cards, in three rows of seven.
+const STAGES = ["the threshold", "the outer world", "the inner world", "the greater forces"];
+const stageOf = (k) => (k === 0 ? 0 : k <= 7 ? 1 : k <= 14 ? 2 : 3);
+
+function arcItems(entries, nameOf) {
+  const n = entries.length;
+  const items = [];
+  const pips = whichCards(entries, (e) => !isMajorCard(e.card) && numberOf(e.card) >= 1);
+  if (pips.length >= 3) {
+    const v = pips.map((i) => numberOf(entries[i].card));
+    const d = v.slice(1).map((x, k) => Math.sign(x - v[k]));
+    const max = Math.max(...v), min = Math.min(...v);
+    const peak = v.indexOf(max), low = v.indexOf(min);
+    let text = null;
+    if (d.every((x) => x >= 0) && d.some((x) => x > 0)) text = "Rising: growth.";
+    else if (d.every((x) => x <= 0) && d.some((x) => x < 0)) text = "Falling: back to basics.";
+    else if (peak > 0 && peak < v.length - 1 && d[0] > 0 && d[d.length - 1] < 0) text = `Peaks at ${nameOf(pips[peak])}: the high point.`;
+    else if (low > 0 && low < v.length - 1 && d[0] < 0 && d[d.length - 1] > 0) text = `Dips at ${nameOf(pips[low])}: the low point.`;
+    else if (d.some((x) => x)) text = "Waves: uneven progress.";
+    if (text) items.push({ head: v.join(" → "), text, cards: pips });
+  }
+  const majors = whichCards(entries, (e) => isMajorCard(e.card));
+  const st = majors.map((i) => stageOf(CARDS.indexOf(entries[i].card)));
+  if (majors.length && (majors.length >= 2 || n >= 3)) {
+    const kinds = [...new Set(st)];
+    const head = `Majors: ${majors.map((i) => CARDS.indexOf(entries[i].card)).join(" → ")}`;
+    let text;
+    if (kinds.length === 1) text = `All from ${STAGES[kinds[0]]} of the Fool's journey.`;
+    else if (st.every((s, k) => !k || s >= st[k - 1])) text = `Forward on the Fool's journey: ${STAGES[st[0]]} → ${STAGES[st[st.length - 1]]}.`;
+    else if (st.every((s, k) => !k || s <= st[k - 1])) text = `Back on the Fool's journey: revisit an old lesson.`;
+    else text = "Across the Fool's journey: several stages at once.";
+    items.push({ head, text, cards: majors });
+  }
+  return items;
+}
+
+// Everything above, as sections for the summary page.
+function deepParts(entries, nameOf) {
+  const dig = dignityTiles(entries, nameOf);
+  return [
+    dig.length ? part("Elemental dignities", dig, { tiles: true, perCard: true, legend: DIGNITY_KEY }) : null,
+    gazePart(entries, nameOf),
+    part("Mirrors & tensions", mirrorItems(entries, nameOf)),
+    part("Number arcs", arcItems(entries, nameOf)),
+  ].filter((p) => p && p.items.length);
 }
 
 // What the reading asks: questions for the spread as a whole (from its
@@ -3024,6 +3228,16 @@ function summaryQuestions(entries, lens) {
   if (majors >= 2 && majors >= Math.ceil(n / 2)) whole.push("What larger lesson might this chapter be teaching you?");
   if (revs && revs >= Math.ceil(n / 2)) whole.push("What is still forming, and needs time rather than pressure?");
   if (n >= 3) whole.push("How do the first card and the last speak to each other?");
+  // From the deeper patterns: a tension, two figures facing each other, the hidden card.
+  const nameOf = (i) => (lens ? placeName(lens, i, entries[i]) : entries[i].label || entries[i].card.name);
+  const t = tensionsOf(entries)[0];
+  if (t) whole.push(t.ask);
+  const f = entries.map(facingOf);
+  const meet = f.findIndex((d, i) => d === "right" && f[i + 1] === "left");
+  if (meet >= 0) whole.push(`What are ${nameOf(meet)} and ${nameOf(meet + 1)} saying to each other?`);
+  const h = hiddenCard(entries);
+  const hq = h && filled(questionsFor(h.card, false))[0];
+  if (hq) whole.push(hq);
   whole.push("What is one small step you could take this week?");
   if (!themes.length) whole.unshift("What links these cards for you?");
 
@@ -3076,19 +3290,134 @@ function fitOneLine(buttons) {
   ro.observe(buttons[0]);
 }
 
-function listSection(title, items) {
-  const sec = el("section", "summary-part");
-  sec.append(el("p", "asks-title", title));
+// A pattern found in certain cards can be tapped to light them up.
+function threadable(node, cards, head) {
+  if (!cards || !cards.length) return;
+  node.dataset.cards = cards.join(",");
+  node.dataset.head = head || "";
+  node.tabIndex = 0;
+  node.setAttribute("role", "button");
+  node.setAttribute("aria-pressed", "false");
+}
+
+function listItems(items) {
   const ul = el("ul");
-  items.forEach(({ head, text, sub }) => {
+  items.forEach(({ head, text, sub, cards }) => {
     const li = el("li");
+    threadable(li, cards, head);
     if (head) li.append(el("strong", "", head));
     li.append(el("span", "", text));
     if (sub) li.append(el("em", "summary-q", sub));
     ul.append(li);
   });
-  sec.append(ul);
+  return ul;
+}
+
+function listSection(title, items) {
+  const sec = el("section", "summary-part");
+  sec.append(el("p", "asks-title", title), listItems(items));
   return sec;
+}
+
+// A section from part(): small tiles in a grid (one per card, lined up
+// like the row of cards, when perCard), or plain list lines.
+function partSection(p, cardCols) {
+  if (!p.tiles) return listSection(p.title, p.items);
+  const sec = el("section", "summary-part tile-part");
+  sec.append(el("p", "asks-title", p.title));
+  // Per card: one column per card, like the row of cards. Otherwise tiles
+  // a third of the column wide, in balanced rows (4 → 2 + 2, 5 → 3 + 2);
+  // a fixed count (the four elements) shares the full width.
+  const grid = el("div", `tiles${p.perCard ? " per-card" : p.cols ? " wide" : ""}`);
+  const k = p.items.length;
+  if (p.perCard) grid.style.setProperty("--cols", cardCols);
+  else grid.style.setProperty("--per", p.cols || (k <= 3 ? k : Math.ceil(k / Math.ceil(k / 3))));
+  p.items.forEach((t) => {
+    const tile = el("div", `tile${t.tone ? ` ${t.tone}` : ""}`);
+    if (t.top) tile.append(el("span", "tile-top", t.top));
+    tile.append(el("span", "tile-main", t.n != null ? cap(String(t.main)) : t.main));
+    // The count as pips, one for each card it is found in (a ring for none).
+    if (t.n != null) {
+      const pips = el("span", "tile-pips", t.n ? Array(t.n).fill("●").join("\u200b") : "○");
+      pips.setAttribute("aria-label", `in ${t.n} card${t.n === 1 ? "" : "s"}`);
+      tile.append(pips);
+    }
+    if (t.note) tile.append(el("span", "tile-note", t.note));
+    threadable(tile, t.cards, [t.top, t.n, t.main].filter((x) => x != null && x !== "").join(" "));
+    grid.append(tile);
+  });
+  sec.append(grid);
+  if (p.legend) sec.append(el("p", "tile-legend", p.legend));
+  if (p.list && p.list.length) sec.append(listItems(p.list));
+  return sec;
+}
+
+// The card behind the reading (see hiddenCard), with its face: tap it
+// to open its page.
+function hiddenSection(entries, nameOf) {
+  const h = hiddenCard(entries);
+  if (!h) return null;
+  const sec = el("section", "summary-part hidden-part");
+  sec.append(el("p", "asks-title", "The hidden card"));
+  const face = el("button", "hidden-face");
+  face.setAttribute("aria-label", `Open ${h.card.name}`);
+  const f = cardFace(h.card, true, false);
+  f.style.height = "100%";
+  face.append(f);
+  face.addEventListener("click", () => openDetails([detailsItem(h.card)], 0));
+  sec.append(face);
+  const what = (h.card.inReading || {}).upright || filled(h.card.keywords).slice(0, 3).join(", ");
+  let how = h.sum + (h.courts ? " · courts count 11–14" : "");
+  if (h.inSpread.length) how += ` · already here, as ${listNames(h.inSpread.map(nameOf))}`;
+  sec.append(listItems([{
+    head: h.card.name, text: `${cap(what)}.`, sub: how,
+    cards: h.inSpread.length ? h.inSpread : entries.map((e, i) => i),
+  }]));
+  return sec;
+}
+
+// A golden thread through the lit cards of a row: a gentle arc from one
+// card's centre to the next, drawn over the row in an SVG of its own.
+const SVG_NS = "http://www.w3.org/2000/svg";
+function drawThread(box, targets, lit, animate) {
+  box.querySelectorAll(":scope > .thread-svg").forEach((s) => s.remove());
+  if (lit.length < 2) return;
+  const r = box.getBoundingClientRect();
+  if (!r.width) return;
+  const pts = lit.map((i) => {
+    const b = targets[i].getBoundingClientRect();
+    return [b.left - r.left + b.width / 2, b.top - r.top + b.height / 2];
+  });
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let k = 1; k < pts.length; k++) {
+    const [x0, y0] = pts[k - 1], [x1, y1] = pts[k];
+    const lift = Math.max(8, Math.hypot(x1 - x0, y1 - y0) * 0.22);
+    d += ` Q${(x0 + x1) / 2},${(y0 + y1) / 2 - lift} ${x1},${y1}`;
+  }
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("class", "thread-svg");
+  svg.setAttribute("viewBox", `0 0 ${r.width} ${r.height}`);
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", d);
+  svg.append(path);
+  pts.forEach(([x, y]) => {
+    const c = document.createElementNS(SVG_NS, "circle");
+    c.setAttribute("cx", x);
+    c.setAttribute("cy", y);
+    c.setAttribute("r", 3.5);
+    svg.append(c);
+  });
+  box.append(svg);
+  if (animate && !calm) {
+    const len = path.getTotalLength();
+    path.style.strokeDasharray = len;
+    path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
+      { duration: 500 + 140 * pts.length, easing: "cubic-bezier(.4,0,.2,1)" });
+    [...svg.querySelectorAll("circle")].forEach((c, k) => c.animate(
+      [{ opacity: 0, transform: "scale(0)" }, { opacity: 1, transform: "scale(1)" }],
+      { duration: 300, delay: k * 140, fill: "backwards", easing: "ease-out" }));
+  }
 }
 
 // entries: [{ card, reversed, label, question }]
@@ -3112,7 +3441,8 @@ function openSummary(entries, title, magic = false) {
   // All the cards in view at once, never a sideways scroll: one row up
   // to five, then two (or more) even rows.
   const row = el("div", "summary-cards");
-  row.style.setProperty("--cols", n <= 5 ? n : Math.min(5, Math.ceil(n / 2)));
+  const cardCols = n <= 5 ? n : Math.min(5, Math.ceil(n / 2));
+  row.style.setProperty("--cols", cardCols);
   const placeLabels = entries.map((e, i) => {
     const b = el("button", "related-card");
     const lab = el("span", "related-label");
@@ -3129,6 +3459,78 @@ function openSummary(entries, title, magic = false) {
   });
   side.append(row);
 
+  // Threads: tapping a pattern lights up the cards it is found in, joined
+  // by a golden thread. When the row of cards has scrolled out of view (on
+  // a phone), a slim strip of the cards rises at the bottom to show it.
+  const cardEls = [...row.children];
+  const strip = el("div", "thread-strip");
+  strip.hidden = true;
+  const stripHead = el("span", "thread-strip-head");
+  const stripRow = el("div", "thread-strip-row");
+  const stripClose = el("button", "thread-strip-close", "×");
+  stripClose.setAttribute("aria-label", "Hide the thread");
+  const minis = entries.map((e, i) => {
+    const m = el("button", "thread-mini");
+    m.setAttribute("aria-label", e.card.name);
+    const face = cardFace(e.card, true, e.reversed);
+    face.style.height = "100%";
+    m.append(face);
+    m.addEventListener("click", () => openDetails(items, i));
+    stripRow.append(m);
+    return m;
+  });
+  strip.append(stripHead, stripRow, stripClose);
+  let thread = null;     // { li, cards, head }
+  let rowInView = true;
+  const showThread = (animate = false) => {
+    if (thread && !thread.li.isConnected) thread = null;   // its section was redrawn
+    const lit = thread ? thread.cards : [];
+    [[row, cardEls], [stripRow, minis]].forEach(([box, list]) => {
+      box.classList.toggle("threading", !!thread);
+      list.forEach((c, i) => c.classList.toggle("lit", lit.includes(i)));
+    });
+    strip.hidden = !thread || rowInView;
+    sheet.classList.toggle("has-strip", !strip.hidden);
+    if (thread) stripHead.textContent = thread.head;
+    drawThread(row, cardEls.map((c) => c.querySelector(".related-pic")), lit, animate);
+    drawThread(stripRow, minis, strip.hidden ? [] : lit, animate);
+  };
+  const pickThread = (li) => {   // li: any tappable pattern, line or tile
+    if (thread) { thread.li.classList.remove("on"); thread.li.setAttribute("aria-pressed", "false"); }
+    if (!li || (thread && thread.li === li)) { thread = null; showThread(); return; }
+    li.classList.add("on");
+    li.setAttribute("aria-pressed", "true");
+    thread = { li, cards: li.dataset.cards.split(",").map(Number), head: li.dataset.head };
+    rowInView = rowShows();
+    showThread(true);
+  };
+  main.addEventListener("click", (ev) => {
+    const li = ev.target.closest("[data-cards]");
+    if (li) pickThread(li);
+  });
+  main.addEventListener("keydown", (ev) => {
+    const li = ev.target.closest("[data-cards]");
+    if (li && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); pickThread(li); }
+  });
+  stripClose.addEventListener("click", () => pickThread(null));
+  // Is most of the row of cards still on screen?
+  const rowShows = () => {
+    const r = row.getBoundingClientRect(), s = sheet.getBoundingClientRect();
+    const seen = Math.min(r.bottom, s.bottom) - Math.max(r.top, s.top);
+    return r.height > 0 && seen > r.height * 0.4;
+  };
+  let ticking = false;
+  sheet.addEventListener("scroll", () => {
+    if (ticking || !thread) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      const now = rowShows();
+      if (now !== rowInView) { rowInView = now; showThread(!now); }
+    });
+  }, { passive: true });
+  new ResizeObserver(() => thread && showThread()).observe(row);
+
   // Every lens as its own button; the chosen one is lit, and the parts
   // that change with it follow.
   const lenses = lensesFor(entries);
@@ -3136,6 +3538,7 @@ function openSummary(entries, title, magic = false) {
   lensBox.setAttribute("role", "group");
   lensBox.setAttribute("aria-label", "Read it as");
   const lensPart = el("div");
+  const deepPart = el("div");
   const asks = el("div", "asks summary-asks");
   let current = 0;
   const render = () => {
@@ -3145,21 +3548,30 @@ function openSummary(entries, title, magic = false) {
       c.setAttribute("aria-pressed", i === current ? "true" : "false");
     });
     entries.forEach((e, i) => { placeLabels[i].textContent = lens ? placeName(lens, i, e) : e.label || ""; });
+    // The deeper patterns name the cards by their place, so they follow the lens.
+    const nameOf = (i) => (lens ? placeName(lens, i, entries[i]) : entries[i].label || entries[i].card.name);
+    deepPart.innerHTML = "";
+    deepParts(entries, nameOf).forEach((p) => deepPart.append(partSection(p, cardCols)));
+    const hidden = hiddenSection(entries, nameOf);
+    if (hidden) deepPart.append(hidden);
     lensPart.innerHTML = "";
-    if (!lens) return;
-    lensPart.append(listSection("The reading", entries.map((e, i) => ({
-      head: placeName(lens, i, e),
-      // The place is already the heading, so drop the line's own "Ahead: " lead-in.
-      text: (() => { const t = placeLine(e, lens.places[i], i).replace(/^[^:]+:\s*/, ""); return t.charAt(0).toUpperCase() + t.slice(1); })(),
-      sub: lens.own && e.question ? e.question : "",
-    }))));
-    const pairs = [];
-    for (let i = 0; i < n - 1; i++) {
-      const p = pairLine(entries[i], entries[i + 1], placeName(lens, i, entries[i]), placeName(lens, i + 1, entries[i + 1]));
-      if (p) pairs.push(p);
+    if (lens) {
+      lensPart.append(listSection("The reading", entries.map((e, i) => ({
+        head: placeName(lens, i, e),
+        // The place is already the heading, so drop the line's own "Ahead: " lead-in.
+        text: (() => { const t = placeLine(e, lens.places[i], i).replace(/^[^:]+:\s*/, ""); return t.charAt(0).toUpperCase() + t.slice(1); })(),
+        sub: lens.own && e.question ? e.question : "",
+        cards: [i],
+      }))));
+      const pairs = [];
+      for (let i = 0; i < n - 1; i++) {
+        const p = pairLine(entries[i], entries[i + 1], placeName(lens, i, entries[i]), placeName(lens, i + 1, entries[i + 1]));
+        if (p) pairs.push({ ...p, cards: [i, i + 1] });
+      }
+      if (pairs.length) lensPart.append(listSection("How the cards meet", pairs));
+      fillSummaryAsks(asks, entries, lens);
     }
-    if (pairs.length) lensPart.append(listSection("How the cards meet", pairs));
-    fillSummaryAsks(asks, entries, lens);
+    showThread();
   };
   lenses.forEach((lens, i) => {
     const b = el("button", "lens-btn", lens.name);
@@ -3178,18 +3590,22 @@ function openSummary(entries, title, magic = false) {
   const story = el("section", "summary-part summary-meaning");
   story.append(el("p", "asks-title", "The story"));
   const lines = [];
-  if (themes.length) lines.push(`This reading circles around ${listNames(themes.slice(0, 2).map((t) => THEME_TEXT[t][0].toLowerCase()))}.`);
+  if (themes.length) lines.push(`At its centre: ${listNames(themes.slice(0, 2).map((t) => THEME_TEXT[t][0].toLowerCase()))}.`);
   lines.push(...storyLines(entries));
-  if (topEl && els[topEl] >= 2) lines.push(`With ${topEl} strongest, the answer lies close to ${ELEMENT_TEXT[topEl]}.`);
-  if (majors >= 2 && majors >= Math.ceil(n / 2)) lines.push("With so many Major cards, this is a meaningful chapter rather than a passing moment.");
-  if (revs && revs >= Math.ceil(n / 2)) lines.push("Give what is still forming time and gentle attention.");
+  if (topEl && els[topEl] >= 2) lines.push(`${topEl} leads: ${ELEMENT_TEXT[topEl]}.`);
+  if (majors >= 2 && majors >= Math.ceil(n / 2)) lines.push("Many Majors: a life chapter, not a passing moment.");
+  if (revs && revs >= Math.ceil(n / 2)) lines.push("Much is still forming: give it time.");
   lines.forEach((l) => story.append(el("p", "", l)));
   main.append(story);
-  parts.forEach(([t, list]) => main.append(listSection(t, list)));
+  if (parts.length || deepPart.childElementCount) {
+    main.append(el("p", "thread-hint", "Tap a pattern to see its cards."));
+  }
+  parts.forEach((p) => main.append(partSection(p, cardCols)));
+  main.append(deepPart);
 
   main.append(asks);
 
-  sheet.append(bar, body);
+  sheet.append(bar, body, strip);
   document.body.append(sheet);
   if (magic && !calm) appearWithMagic(sheet, body);
   else slideIn(sheet);

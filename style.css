@@ -1278,7 +1278,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .summary-page .summary-kw { font-size: .9rem; }
 
   .summary-page .col-main {
-    columns: 2 440px;
+    columns: 2 360px;
     column-gap: 56px;
     column-rule: 1px solid rgba(201, 169, 110, .14);
     padding-top: 0;
@@ -1337,7 +1337,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .card-page .corr-value { font-size: 1.1rem; }
 
   .card-page .col-main {
-    columns: 2 440px;
+    columns: 2 360px;
     column-gap: 56px;
     column-rule: 1px solid rgba(201, 169, 110, .14);
     padding-top: 0;
@@ -1381,3 +1381,220 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .card-page .related-row { --rc: 92px; }
   .card-page .related-name { font-size: .9rem; }
 }
+
+/* ── Threads: a tapped pattern lights the cards it runs through ── */
+.thread-hint {
+  padding-bottom: 6px;
+  margin: 18px 0 0;
+  font-size: .85rem;
+  font-style: italic;
+  color: var(--muted);
+  text-align: center;
+}
+.summary-page .summary-part li[data-cards] {
+  cursor: pointer;
+  padding-inline: 10px;
+  border-radius: 10px;
+  transition: background-color .2s, box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.summary-page .summary-part li[data-cards] > strong::after {
+  content: " ✦";
+  font-size: .55em;
+  vertical-align: .35em;
+  opacity: .5;
+}
+@media (hover: hover) {
+  .summary-page .summary-part li[data-cards]:hover { background: rgba(201, 169, 110, .06); }
+}
+.summary-page .summary-part li[data-cards]:focus-visible { outline: 1px solid rgba(201, 169, 110, .6); }
+.summary-page .summary-part li.on {
+  background: rgba(201, 169, 110, .12);
+  box-shadow: inset 0 0 0 1px rgba(201, 169, 110, .38);
+}
+.summary-page .summary-part li.on > strong::after { opacity: 1; }
+
+.summary-cards, .thread-strip-row { position: relative; }
+.summary-cards .related-card, .thread-mini { transition: opacity .3s, filter .3s; }
+.threading > .related-card:not(.lit),
+.threading > .thread-mini:not(.lit) { opacity: .32; filter: grayscale(.6); }
+.threading > .related-card.lit .related-pic,
+.threading > .thread-mini.lit {
+  box-shadow: 0 0 0 1.5px var(--gold), 0 0 16px rgba(232, 200, 130, .55);
+}
+.thread-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2;
+}
+.thread-svg path {
+  fill: none;
+  stroke: #e8c882;
+  stroke-width: 2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(232, 200, 130, .9));
+}
+.thread-svg circle {
+  fill: #f6e4b4;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 4px rgba(232, 200, 130, .9));
+}
+
+/* The strip at the bottom, while the row of cards is out of view. */
+.thread-strip {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px calc(env(safe-area-inset-bottom) + 10px);
+  background: rgba(21, 19, 28, .94);
+  border-top: 1px solid rgba(201, 169, 110, .35);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: strip-in .3s cubic-bezier(.2, .8, .2, 1);
+}
+.thread-strip[hidden] { display: none; }
+@keyframes strip-in { from { transform: translateY(100%); } }
+.thread-strip-head {
+  max-width: calc(100% - 64px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--gold);
+  font-size: .78rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.thread-strip-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+.thread-mini {
+  flex: 0 1 40px;
+  min-width: 0;
+  aspect-ratio: 4 / 7;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  overflow: hidden;
+}
+.thread-strip-close {
+  position: absolute;
+  top: 4px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.sheet.has-strip { padding-bottom: calc(env(safe-area-inset-bottom) + 130px); }
+
+/* The hidden card: the Major card the spread's numbers add up to. */
+.hidden-face {
+  display: block;
+  width: 76px;
+  aspect-ratio: 4 / 7;
+  margin: 2px auto 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(201, 169, 110, .5), 0 0 22px rgba(201, 169, 110, .28);
+}
+@media (prefers-reduced-motion: reduce) {
+  .thread-strip { animation: none; }
+}
+
+/* ── Tiles: counts and per-card states, seen at a glance ──
+   LAYOUT RULE: every tile is the same width in every section (a third
+   of the column, or a card's width when per card), every row the same
+   height, every line one line. Rows are balanced by app.js (--per):
+   4 tiles sit 2 + 2, 5 sit 3 + 2, never one left alone. */
+.tiles {
+  --per: 3;
+  display: grid;
+  grid-template-columns: repeat(var(--per), calc((100% - 12px) / 3));
+  grid-auto-rows: 1fr;
+  justify-content: center;
+  gap: 6px;
+}
+.tiles.per-card { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); }
+.tiles.wide { grid-template-columns: repeat(var(--per), minmax(0, 1fr)); }
+.tile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 6px 4px;
+  border: 1px solid rgba(201, 169, 110, .2);
+  border-radius: 8px;
+  background: rgba(201, 169, 110, .035);
+  text-align: center;
+  line-height: 1.2;
+  transition: background-color .2s, border-color .2s, opacity .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tile[data-cards] { cursor: pointer; }
+.tile-top, .tile-main, .tile-note {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tile-top { font-size: .58rem; letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+.tile-main { font-size: .92rem; color: var(--ink); }
+.tile-n { font-weight: normal; font-size: 1.15em; color: var(--gold); }
+.tile-note { font-family: var(--read); font-size: .7rem; color: var(--muted); }
+.per-card .tile { padding-inline: 2px; }
+.tile.good { border-color: rgba(201, 169, 110, .5); }
+.tile.good .tile-note { color: var(--gold); }
+.tile.bad { border-color: rgba(201, 125, 105, .4); }
+.tile.bad .tile-note { color: #d0907e; }
+.tile.mixed .tile-note { color: #d6b77c; }
+.tile.quiet { opacity: .5; }
+@media (hover: hover) { .tile[data-cards]:hover { background: rgba(201, 169, 110, .1); } }
+.tile:focus-visible { outline: 1px solid rgba(201, 169, 110, .6); }
+.tile.on { opacity: 1; border-color: var(--gold); background: rgba(201, 169, 110, .16); }
+.tile-legend { margin: 8px 0 0; font-size: .7rem; line-height: 1.4; color: var(--muted); }
+.tile-part ul { margin-top: 10px; }
+@media (min-width: 900px) {
+  .summary-page .tile { padding: 8px 6px; }
+  .summary-page .tile-top { font-size: .62rem; }
+  .summary-page .tile-main { font-size: 1.05rem; }
+  .summary-page .tile-note { font-size: .8rem; }
+  .summary-page .tile-legend { font-size: .8rem; }
+  .summary-page .tile-part li { font-size: 1.05rem; }
+}
+.per-card .tile-top { letter-spacing: 0; font-size: .55rem; text-overflow: clip; }
+/* The count, as pips: one dot for each card the pattern is found in. */
+.tile-pips {
+  margin: 1px 0 2px;
+  font-size: .5rem;
+  line-height: 1;
+  letter-spacing: .32em;
+  margin-right: -.32em;   /* keeps the dots centred despite the spacing */
+  color: var(--gold);
+}
+@media (min-width: 900px) { .summary-page .tile-pips { font-size: .58rem; } }
+/* bigger dots on the phone; many cards wrap to a second row of six */
+.tile-pips { font-size: .66rem; white-space: normal; max-width: 7.2em; margin-inline: auto; margin-right: auto; padding-left: .32em; }
+@media (min-width: 900px) { .summary-page .tile-pips { font-size: .7rem; } }

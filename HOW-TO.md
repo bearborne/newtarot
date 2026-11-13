@@ -83,6 +83,25 @@ challenge. Past readings in Your history
 have a **Summary** link too. Under each turned card you also see its name and the one keyword
 most connected to the other cards in the spread.
 
+Further down, the patterns sit in small tiles you can take in at a glance:
+
+- **Themes, Shared words, In the pictures**: what comes back across the cards, counted ("2 crowns").
+- **Elements**: all four, counted; a missing one is dimmed.
+- **Symbolism**: Major cards, shared numbers, court ranks, astrology, reversals.
+- **Elemental dignities**: one tile per card, strengthened or weakened by its neighbours.
+  Fire+Air and Water+Earth help; Fire+Water and Air+Earth clash.
+- **Gaze**: one tile per card with the way its figure looks (← back, → ahead). A reversed card looks the other way.
+- **Mirrors & tensions**: mirrored pairs (The Tower ↔ The Star), Ace ↔ Ten, Queen ↔ King, opposing themes.
+- **Number arcs**: whether the numbers rise, fall or peak, and where the Majors sit on the Fool's journey.
+- **The hidden card**: the cards' numbers added and reduced to a Major card (courts count 11–14).
+
+Tap any tile or line and its cards light up, joined by a golden thread. On the phone, a strip of
+the cards shows the thread at the bottom of the screen while you read.
+
+The symbols and the direction each figure looks are kept in **symbols.js**: `SYMBOLS` lists every
+symbol and what it means, and `PICTURES` has one line per card with its `facing` ("left", "right",
+"back" or "") and its `symbols`. Add or remove ids there to change what the summary finds.
+
 ## Your history, notes and backups
 
 Every reading and every card of the day is saved on the device the moment the cards are drawn.
