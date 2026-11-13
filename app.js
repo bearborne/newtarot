@@ -248,12 +248,31 @@ function setHint(text) {
 
 // ── 1. Choose a spread ──────────────────────────────────
 
+const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+
+// A little fan of card backs, drawn like the real deck: dark, with a thin
+// gold outline, an inner line and a small circle.
+function spreadFan(n) {
+  const W = 46, H = 30, w = 11, h = 18;
+  const spread = n === 1 ? 0 : Math.min(14, 5 + n * 3);
+  let cards = "";
+  for (let k = 0; k < n; k++) {
+    const a = n === 1 ? 0 : -spread + (2 * spread * k) / (n - 1);
+    const x = W / 2 + (k - (n - 1) / 2) * 3.2, y = H / 2 + 3 + Math.abs(a) * 0.12;
+    cards += `<g transform="translate(${x} ${y}) rotate(${a})">`
+      + `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="1.6" fill="#2a2436" stroke="#c9a96e" stroke-width=".9"/>`
+      + `<rect x="${-w / 2 + 1.8}" y="${-h / 2 + 1.8}" width="${w - 3.6}" height="${h - 3.6}" rx=".8" fill="none" stroke="#c9a96e" stroke-opacity=".45" stroke-width=".5"/>`
+      + `<circle r="${w * 0.17}" fill="none" stroke="#c9a96e" stroke-width=".6"/></g>`;
+  }
+  return `<svg class="spread-fan" viewBox="0 0 ${W} ${H}" aria-hidden="true">${cards}</svg>`;
+}
+
 SPREADS.forEach((spread) => {
+  const n = spread.positions.length;
   const b = el("button", "spread-btn");
-  const row = el("span", "mini-row");
-  row.dataset.n = spread.positions.length;   // 4 and 5 stack in two rows
-  spread.positions.forEach(() => row.append(el("i")));
-  b.append(row, el("span", "spread-name", spread.name));
+  b.setAttribute("aria-label", spread.name);
+  b.innerHTML = spreadFan(n);
+  b.append(el("span", "spread-num", ROMAN[n - 1] || String(n)), el("span", "spread-word", n === 1 ? "card" : "cards"));
   b.addEventListener("click", () => startReading(spread));
   $("spreadList").append(b);
 });
