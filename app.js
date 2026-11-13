@@ -771,6 +771,7 @@ async function pick(fanCard) {
   slot.placed = true;   // it can be turned over now, even before the rest are picked
   if (S !== reading) return;
   if (fx === "classic" && !calm) magicLand(slot.i);
+  magicStep();   // each card laid down adds the next element of the circle, faintly
 
   if (allPicked) {
     await wait(150);
@@ -903,7 +904,7 @@ const SEAL = 5;
 
 const GOLD = "201, 169, 110";
 const MG = { cv: null, ctx: null, running: false, cards: [], travels: [], links: [], finale: 0, w: 0, h: 0,
-  flyers: [], ghosts: [], flares: [], motes: [] };
+  flyers: [], ghosts: [], flares: [], motes: [], steps: [] };
 
 function sizeMagic() {
   const c = $("magic");
@@ -925,7 +926,7 @@ function sizeMagic() {
 
 function resetMagic() {
   MG.cards = []; MG.travels = []; MG.links = []; MG.finale = 0; MG.great = null; MG.portal = false;
-  MG.flyers = []; MG.ghosts = []; MG.flares = []; MG.motes = [];
+  MG.flyers = []; MG.ghosts = []; MG.flares = []; MG.motes = []; MG.steps = []; MG.total = 0; MG.waitAt = null; MG.burst = false;
   if (MG.ctx) MG.ctx.clearRect(0, 0, MG.w, MG.h);
   if (MG.frx) MG.frx.clearRect(0, 0, MG.w, MG.h);
 }
@@ -1546,12 +1547,16 @@ function magicReveal(i) {
   if (!S) return;
   if (!MG.ctx) sizeMagic();
   const now = performance.now();
-  if (!MG.cards[i]) {
+  const fresh = !MG.cards[i];
+  if (fresh) {
     MG.cards[i] = { at: now, runes: Array.from({ length: 8 }, () => rand(RUNES.length)), spin: rand(2) ? 1 : -1,
       element: S.slots[i].card ? elementFor(S.slots[i].card) : null };
     if (S.slots[i].card) measureInset(S.slots[i].card);
   }
   const waiting = S.slots.map((s, k) => k).filter((k) => !MG.cards[k]);
+  // Each card turned adds the next element of the circle; the last one
+  // turned brings the whole circle together instead.
+  if (waiting.length && fresh) magicStep();
   if (waiting.length) {
     const next = waiting.find((k) => k > i) ?? waiting[0];
     MG.travels.push({ from: i, to: next, at: now, dur: vary(1100) });
@@ -1668,7 +1673,7 @@ function drawMagic(t) {
   });
 
   // A card the energy has reached, waiting to be turned: a soft breathing ring.
-  if (MG.waitAt && !MG.cards[MG.waitAt.i]) {
+  if (MG.waitAt && !MG.cards[MG.waitAt.i] && geo[MG.waitAt.i]) {
     const g = geo[MG.waitAt.i];
     const a = 0.1 + 0.08 * Math.sin((t - MG.waitAt.at) / 420);
     ctx.strokeStyle = `rgba(${GOLD}, ${a})`;
@@ -1723,21 +1728,26 @@ function drawMagic(t) {
     });
   });
 
-  // All turned: threads from every card meet in the middle, then a great
-  // rune circle forms around the whole spread and keeps turning.
-  if (MG.finale && t >= MG.finale) {
-    const left = Math.min(...geo.map((g) => g.x - g.rx)), right = Math.max(...geo.map((g) => g.x + g.rx));
-    const top = Math.min(...geo.map((g) => g.y - g.ry)), bottom = Math.max(...geo.map((g) => g.y + g.ry));
-    const cx = (left + right) / 2, cy = (top + bottom) / 2;
-    const header = document.querySelector("#table .bar").getBoundingClientRect().bottom;
-    // The great circle: a perfect circle around the spread. A tall spread on a
-    // narrow screen can't fit inside one, so there it passes behind the cards.
-    const R1 = Math.round(Math.max((right - left) / 2 + 26, Math.min((bottom - top) / 2 + 26, MG.w * 0.48)));
+  // Where the great circle sits: a perfect circle around the spread. A tall
+  // spread on a narrow screen can't fit inside one, so there it passes behind the cards.
+  const finaleOn = MG.finale && t >= MG.finale;
+  if (!finaleOn && !MG.steps.length) return;
+  const left = Math.min(...geo.map((g) => g.x - g.rx)), right = Math.max(...geo.map((g) => g.x + g.rx));
+  const top = Math.min(...geo.map((g) => g.y - g.ry)), bottom = Math.max(...geo.map((g) => g.y + g.ry));
+  const cx = (left + right) / 2, cy = (top + bottom) / 2;
+  const header = document.querySelector("#table .bar").getBoundingClientRect().bottom;
+  const R1 = Math.round(Math.max((right - left) / 2 + 26, Math.min((bottom - top) / 2 + 26, MG.w * 0.48)));
+
+  // All turned: threads from every card meet in a seal above the spread,
+  // then the circle comes together. Until then, it shows only the elements
+  // that picking and turning have added so far.
+  let seal = null, from = null;
+  if (finaleOn) {
     const gather = Math.min(1, (t - MG.finale) / 900);
     // The threads meet in a seal just above the spread, where nothing covers it.
-    const seal = { x: cx, y: Math.max(top - 44, header + 16) };
+    const sealAt = { x: cx, y: Math.max(top - 44, header + 16) };
     geo.forEach((g, i) => {
-      const path = pointPath(g, seal, i % 2 ? 0.15 : -0.15);
+      const path = pointPath(g, sealAt, i % 2 ? 0.15 : -0.15);
       ctx.strokeStyle = `rgba(${GOLD}, ${0.14 * pulse})`;
       ctx.lineWidth = 1;
       strokeCurve(ctx, path, gather);
@@ -1751,19 +1761,27 @@ function drawMagic(t) {
     });
     // Where the great circle is, for the summary's portal to take it over.
     MG.great = { cx, cy, R1, from: MG.finale + 900 };
-    if (gather >= 1 && !MG.portal) {
-      drawArcaneCircle(ctx, t, { cx, cy, R1, seal, from: MG.finale + 900 });
-      // The outer ring may reach past the header: let it fade out beneath the title.
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      const fade = ctx.createLinearGradient(0, header - 14, 0, header + 4);
-      fade.addColorStop(0, "rgba(0, 0, 0, 1)");
-      fade.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = fade;
-      ctx.fillRect(0, 0, MG.w, header + 4);
-      ctx.restore();
+    if (gather >= 1) {
+      seal = sealAt;
+      from = MG.finale + 900;
+      // The moment it comes together: sparks shower out over the cards.
+      if (!MG.burst && !calm) {
+        MG.burst = true;
+        burstMotes(cx, cy, 70, R1 * 0.25);
+        burstMotes(cx, cy, 90, R1);
+      }
     }
   }
+  if (!MG.portal) drawArcaneCircle(ctx, t, { cx, cy, R1, seal, from });
+  // The circle may reach past the header: let it fade out beneath the title.
+  ctx.save();
+  ctx.globalCompositeOperation = "destination-out";
+  const fade = ctx.createLinearGradient(0, header - 14, 0, header + 4);
+  fade.addColorStop(0, "rgba(0, 0, 0, 1)");
+  fade.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = fade;
+  ctx.fillRect(0, 0, MG.w, header + 4);
+  ctx.restore();
 }
 
 // ── The great arcane circle ─────────────────────────────
@@ -1808,20 +1826,88 @@ function sigilCanvas(R, scale) {
   return { c, x, size, scale };
 }
 
-// Strokes a path into a sigil picture as golden light: a soft glow under a pale core.
+// Strokes a path into a sigil picture as golden light, in three layers like
+// light cut into the air: a wide amber haze, a warm glow, and a thin,
+// almost white-hot core.
+const ARC_DEEP = "255, 160, 70", ARC_HOT = "255, 249, 232";
 function lightStroke(s, path, alpha, w) {
   const x = s.x;
   x.save();
-  x.shadowColor = `rgba(${ARC_GLOW}, ${alpha})`;
-  x.shadowBlur = 7 * s.scale;
-  x.strokeStyle = `rgba(${ARC_GLOW}, ${0.35 * alpha})`;
-  x.lineWidth = w * 2.4;
+  x.shadowColor = `rgba(${ARC_DEEP}, ${0.45 * alpha})`;
+  x.shadowBlur = 9 * s.scale;
+  x.strokeStyle = `rgba(${ARC_DEEP}, ${0.07 * alpha})`;
+  x.lineWidth = w * 3.2;
+  x.stroke(path);
+  x.shadowColor = `rgba(${ARC_GLOW}, ${0.8 * alpha})`;
+  x.shadowBlur = 4 * s.scale;
+  x.strokeStyle = `rgba(${ARC_GLOW}, ${0.32 * alpha})`;
+  x.lineWidth = w * 1.8;
   x.stroke(path);
   x.shadowBlur = 0;
-  x.strokeStyle = `rgba(${ARC_CORE}, ${alpha})`;
-  x.lineWidth = w;
+  x.strokeStyle = `rgba(${ARC_HOT}, ${Math.min(1, alpha * 1.15)})`;
+  x.lineWidth = w * 0.85;
   x.stroke(path);
   x.restore();
+}
+
+// A smaller copy of a picture (the browser smooths it as it shrinks).
+function shrink(src, f) {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(src.width * f));
+  c.height = Math.max(1, Math.round(src.height * f));
+  const x = c.getContext("2d");
+  x.imageSmoothingQuality = "high";
+  x.drawImage(src, 0, 0, c.width, c.height);
+  return c;
+}
+
+// The bloom of a sigil: its light, blurred at two widths and laid
+// together, kept small (it is soft, so it scales up without losing
+// anything). Drawn under the crisp lines, it makes the light spill into
+// the air around them. Made once, by shrinking: no slow blur filters.
+function makeBloom(s) {
+  const q = shrink(shrink(s.c, 0.5), 0.5);   // a quarter: the tight glow
+  const e = shrink(q, 0.5), w = shrink(shrink(e, 0.5), 0.5);   // an eighth and a thirty-second: the wide glow
+  const c = document.createElement("canvas");
+  c.width = q.width; c.height = q.height;
+  const x = c.getContext("2d");
+  x.globalCompositeOperation = "lighter";
+  x.imageSmoothingQuality = "high";
+  // Mostly the tight glow that hugs the lines; only a little of the wide one.
+  x.globalAlpha = 0.7;
+  x.drawImage(q, 0, 0);
+  x.globalAlpha = 0.35;
+  x.drawImage(e, 0, 0, c.width, c.height);
+  x.globalAlpha = 0.2;
+  x.drawImage(w, 0, 0, c.width, c.height);
+  // warm it towards amber, so the bloom reads as heat around gold light
+  x.globalCompositeOperation = "source-atop";
+  x.fillStyle = `rgba(${ARC_DEEP}, .25)`;
+  x.fillRect(0, 0, c.width, c.height);
+  return c;
+}
+
+// A soft round dot of light, drawn once and reused for every spark and mote.
+let glowDot = null;
+function glowSprite() {
+  if (glowDot) return glowDot;
+  glowDot = document.createElement("canvas");
+  glowDot.width = glowDot.height = 64;
+  const x = glowDot.getContext("2d");
+  const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, `rgba(${ARC_HOT}, 1)`);
+  g.addColorStop(0.15, `rgba(${ARC_CORE}, .85)`);
+  g.addColorStop(0.4, `rgba(${ARC_GLOW}, .28)`);
+  g.addColorStop(1, `rgba(${ARC_DEEP}, 0)`);
+  x.fillStyle = g;
+  x.fillRect(0, 0, 64, 64);
+  return glowDot;
+}
+function glowAt(ctx, x, y, r, alpha) {
+  if (alpha <= 0.01) return;
+  ctx.globalAlpha = Math.min(1, alpha);
+  ctx.drawImage(glowSprite(), x - r, y - r, r * 2, r * 2);
+  ctx.globalAlpha = 1;
 }
 
 const circlePath = (p, r, x = 0, y = 0) => { p.moveTo(x + r, y); p.arc(x, y, r, 0, Math.PI * 2); return p; };
@@ -1868,18 +1954,46 @@ function sigilsFor(R1) {
   return SIGILS.get(key);
 }
 
-function buildSigils(R1, dpr) {
-  const R2 = Math.round(R1 * 1.34 + 12);
-  // Big pictures are drawn at a lower resolution: the light is soft anyway.
-  const scale = Math.min(dpr, 1800 / (2 * (R2 + 54)));
-  const TAU = Math.PI * 2, top = -Math.PI / 2;
+// The circle's elements, in the order they appear: each card picked or
+// turned adds the next one, faintly, and the last card turned brings in
+// the rest and lights them all. Each materialises where it stands, in a
+// magical fade. group: part of the inner sigil (turning with it) or the outer one.
+const ARC_PARTS = [
+  { key: "core",    group: "in" },    // the innermost circle
+  { key: "midband", group: "in" },    // the small ring of runes round it
+  { key: "star",    group: "in" },    // the six-pointed star
+  { key: "ring",    group: "in" },    // the main ring's lines
+  { key: "runes",   group: "in" },    // the main band of runes
+  { key: "sats",    group: "in" },    // three small circles riding the rim
+  { key: "oring",   group: "out" },   // the outer ring's lines
+  { key: "orunes",  group: "out" },   // the outer band of runes
+  { key: "squares", group: "out" },   // two crossed squares
+  { key: "arcs",    group: "out" },   // broken arcs and ticks at the edge
+  // The crown: the outermost ring, brought only by the final reveal. Unlike
+  // the rest it has no solid line: a string of beads carrying eight rune
+  // medallions, turning on its own, slowly, against the ring inside it.
+  { key: "crown",   group: "crown", final: true },
+];
+// The elements the picks and turns share out; the final ones come with the last card turned.
+const STEPPED = ARC_PARTS.filter((e) => !e.final);
 
-  // The inner sigil.
-  const a = sigilCanvas(R1, scale);
-  lightStroke(a, circlePath(new Path2D(), R1), 0.85, 1.2);
-  lightStroke(a, circlePath(new Path2D(), R1 - 22), 0.6, 0.8);
-  lightStroke(a, circlePath(new Path2D(), R1 + 5), 0.3, 0.5);
-  runeBand(a, R1 - 11, 6 * Math.max(4, Math.round((TAU * R1) / 24 / 6)), Math.max(4, Math.round((TAU * R1) / 24 / 6)), 11, 0, 0.75);
+function buildSigils(R1, dpr) {
+  const R2 = Math.round(R1 * 1.34 + 12), R3 = R2 + 44;   // R3: where the crown runs
+  // Big pictures are drawn at a lower resolution: the light is soft anyway.
+  const scale = Math.min(dpr, 2000 / (2 * (R3 + 60)));
+  const TAU = Math.PI * 2, top = -Math.PI / 2, Rm = R1 * 0.56;
+  // Each element is its own picture (just big enough for it), with its own
+  // bloom, and `radius` is where sparks twinkle as it materialises.
+  const parts = {}, radius = {};
+  const part = (key, R, r) => { const s = sigilCanvas(R, scale); parts[key] = s; radius[key] = r; return s; };
+
+  // The innermost circle.
+  lightStroke(part("core", R1 * 0.3 + 4, R1 * 0.3), circlePath(circlePath(new Path2D(), R1 * 0.3), R1 * 0.3 - 5), 0.45, 0.7);
+  // The small ring of runes round it.
+  const mid = part("midband", Rm + 4, Rm);
+  lightStroke(mid, circlePath(circlePath(new Path2D(), Rm), Rm - 13), 0.4, 0.6);
+  runeBand(mid, Rm - 6.5, 6 * Math.max(3, Math.round((TAU * Rm) / 18 / 6)), 1e9, 8, 5, 0.45);
+  // The six-pointed star, its points touching the main ring's inner line.
   const hex = new Path2D();
   for (let tri = 0; tri < 2; tri++) {
     hex.moveTo(Math.cos(top + tri * Math.PI) * (R1 - 22), Math.sin(top + tri * Math.PI) * (R1 - 22));
@@ -1888,13 +2002,19 @@ function buildSigils(R1, dpr) {
       hex.lineTo(Math.cos(ang) * (R1 - 22), Math.sin(ang) * (R1 - 22));
     }
   }
-  lightStroke(a, hex, 0.4, 0.7);
-  const Rm = R1 * 0.56;
-  lightStroke(a, circlePath(circlePath(new Path2D(), Rm), Rm - 13), 0.35, 0.6);
-  runeBand(a, Rm - 6.5, 6 * Math.max(3, Math.round((TAU * Rm) / 18 / 6)), 1e9, 8, 5, 0.4);
-  lightStroke(a, circlePath(new Path2D(), R1 * 0.3), 0.25, 0.6);
-  // Three satellite circles riding on the rim, each with a rune at its heart.
-  const sat = new Path2D(), satRunes = new Path2D(), rs = Math.max(13, R1 * 0.11);
+  lightStroke(part("star", R1 - 18, R1 - 22), hex, 0.45, 0.7);
+  // The main ring's lines.
+  const ring = part("ring", R1 + 8, R1);
+  lightStroke(ring, circlePath(new Path2D(), R1), 0.85, 1.2);
+  lightStroke(ring, circlePath(new Path2D(), R1 - 22), 0.6, 0.8);
+  lightStroke(ring, circlePath(new Path2D(), R1 + 5), 0.3, 0.5);
+  // The main band of runes.
+  const per = Math.max(4, Math.round((TAU * R1) / 24 / 6));
+  runeBand(part("runes", R1 - 2, R1 - 11), R1 - 11, 6 * per, per, 11, 0, 0.75);
+  // Three small circles riding the rim, each with a rune at its heart.
+  const rs = Math.max(13, R1 * 0.11);
+  const sats = part("sats", R1 + rs + 2, R1);
+  const sat = new Path2D(), satRunes = new Path2D();
   for (let k = 0; k < 3; k++) {
     const ang = top + (k / 3) * TAU + Math.PI / 3;
     const x = Math.cos(ang) * R1, y = Math.sin(ang) * R1;
@@ -1902,86 +2022,358 @@ function buildSigils(R1, dpr) {
     circlePath(sat, rs * 0.72, x, y);
     addRune(satRunes, [SEAL, 8, 14][k], x, y, rs * 0.9, ang + Math.PI / 2);
   }
-  lightStroke(a, sat, 0.6, 0.8);
-  lightStroke(a, satRunes, 0.7, 0.8);
+  lightStroke(sats, sat, 0.6, 0.8);
+  lightStroke(sats, satRunes, 0.7, 0.8);
 
-  // The outer sigil.
-  const b = sigilCanvas(R2 + 24, scale);
-  lightStroke(b, circlePath(new Path2D(), R2), 0.8, 1.1);
-  lightStroke(b, circlePath(new Path2D(), R2 - 26), 0.55, 0.8);
-  const per = Math.max(3, Math.round((TAU * R2) / 26 / 8));
-  runeBand(b, R2 - 13, 8 * per, per, 12.5, 3, 0.7);
+  // The outer ring's lines.
+  const oring = part("oring", R2 + 4, R2);
+  lightStroke(oring, circlePath(new Path2D(), R2), 0.8, 1.1);
+  lightStroke(oring, circlePath(new Path2D(), R2 - 26), 0.55, 0.8);
+  // The outer band of runes.
+  const oper = Math.max(3, Math.round((TAU * R2) / 26 / 8));
+  runeBand(part("orunes", R2 - 2, R2 - 13), R2 - 13, 8 * oper, oper, 12.5, 3, 0.7);
   // Two crossed squares whose corners sit on the band and whose sides cut through the inner circle.
   const sq = new Path2D();
   starLines(sq, R2 - 26, 4, top, 16);
   starLines(sq, R2 - 26, 4, top + Math.PI / 4, 16);
-  lightStroke(b, sq, 0.42, 0.75);
-  // Broken arcs beyond: long on the quarters, short between.
+  lightStroke(part("squares", R2 - 6, R2 - 26), sq, 0.42, 0.75);
+  // Broken arcs at the very edge, long on the quarters and short between, and fine ticks.
+  const edge = part("arcs", R2 + 24, R2 + 13);
   const arcs = new Path2D();
   for (let k = 0; k < 8; k++) {
-    const mid = top + (k / 8) * TAU, half = (k % 2 ? 7 : 17) * (Math.PI / 180);
-    arcs.moveTo(Math.cos(mid - half) * (R2 + 13), Math.sin(mid - half) * (R2 + 13));
-    arcs.arc(0, 0, R2 + 13, mid - half, mid + half);
+    const m = top + (k / 8) * TAU, half = (k % 2 ? 7 : 17) * (Math.PI / 180);
+    arcs.moveTo(Math.cos(m - half) * (R2 + 13), Math.sin(m - half) * (R2 + 13));
+    arcs.arc(0, 0, R2 + 13, m - half, m + half);
   }
-  lightStroke(b, arcs, 0.5, 0.8);
+  lightStroke(edge, arcs, 0.5, 0.8);
   const ticks = new Path2D();
   for (let k = 0; k < 72; k++) {
     const ang = (k / 72) * TAU, l = k % 9 === 0 ? 7 : 3;
     ticks.moveTo(Math.cos(ang) * (R2 + 3), Math.sin(ang) * (R2 + 3));
     ticks.lineTo(Math.cos(ang) * (R2 + 3 + l), Math.sin(ang) * (R2 + 3 + l));
   }
-  lightStroke(b, ticks, 0.3, 0.6);
+  lightStroke(edge, ticks, 0.3, 0.6);
 
-  return { R1, R2, inner: a, outer: b };
+  // The crown: unlike every other ring, no solid line at all. A string of
+  // beads of light runs round, carrying eight medallions, each a small
+  // double circle holding a large rune; the beads swell towards each
+  // medallion and dwindle midway between, where a tiny star marks the gap.
+  const crown = part("crown", R3 + 22, R3);
+  const M = 8, medR = 15;
+  const beads = new Path2D(), meds = new Path2D(), medRunes = new Path2D(), gaps = new Path2D();
+  for (let k = 0; k < M; k++) {
+    const a = top + (k / M) * TAU, x = Math.cos(a) * R3, y = Math.sin(a) * R3;
+    circlePath(meds, medR, x, y);
+    circlePath(meds, medR - 4, x, y);
+    addRune(medRunes, [SEAL, 10, 14, 8][k % 4], x, y, 15, a + Math.PI / 2);
+    // the beads between this medallion and the next
+    const span = TAU / M, clear = (medR + 7) / R3, n = Math.max(6, Math.round(((span - 2 * clear) * R3) / 10));
+    for (let j = 0; j < n; j++) {
+      const u = (j + 0.5) / n, b = a + clear + u * (span - 2 * clear);
+      if (Math.abs(u - 0.5) < 0.5 / n) continue;   // the middle bead gives way to the star
+      const r = 0.7 + 1.5 * Math.abs(u - 0.5) * 2;   // larger near the medallions
+      circlePath(beads, r, Math.cos(b) * R3, Math.sin(b) * R3);
+    }
+    const m = a + span / 2, sx = Math.cos(m) * R3, sy = Math.sin(m) * R3, s = 3.6;
+    gaps.moveTo(sx - s, sy); gaps.lineTo(sx + s, sy);
+    gaps.moveTo(sx, sy - s); gaps.lineTo(sx, sy + s);
+  }
+  lightStroke(crown, beads, 0.55, 0.9);
+  lightStroke(crown, meds, 0.55, 0.8);
+  lightStroke(crown, medRunes, 0.65, 0.85);
+  lightStroke(crown, gaps, 0.45, 0.6);
+
+  // The whole inner and outer sigils, each laid together from its
+  // elements, for the summary's portal to turn as one.
+  const compose = (R, group) => {
+    const c = sigilCanvas(R, scale);
+    ARC_PARTS.filter((e) => e.group === group).forEach(({ key }) => {
+      const p = parts[key];
+      c.x.drawImage(p.c, -p.size / 2, -p.size / 2, p.size, p.size);
+    });
+    c.bloom = makeBloom(c);
+    return c;
+  };
+  Object.values(parts).forEach((p) => { p.bloom = makeBloom(p); });
+  return { R1, R2, R3, parts, radius, inner: compose(R1, "in"), outer: compose(R2 + 24, "out") };
 }
 
-// Draws a sigil picture centred at (cx, cy), turned, scaled and faded.
-function drawSigil(ctx, s, cx, cy, rot, k, alpha) {
+// Draws a sigil picture centred at (cx, cy), turned, scaled and faded:
+// its bloom first, spilling light round it (`glow` sets how much), then
+// the crisp lines on top. Meant for a canvas drawing with "lighter".
+function drawSigil(ctx, s, cx, cy, rot, k, alpha, glow = 1) {
   if (alpha <= 0.005) return;
   ctx.save();
-  ctx.globalAlpha = Math.min(1, alpha);
   ctx.translate(cx, cy);
   ctx.rotate(rot);
   ctx.scale(k, k);
+  if (s.bloom && glow > 0) {
+    ctx.globalAlpha = Math.min(1, alpha * glow * 0.4);
+    ctx.drawImage(s.bloom, -s.size / 2, -s.size / 2, s.size, s.size);
+  }
+  ctx.globalAlpha = Math.min(1, alpha);
   ctx.drawImage(s.c, -s.size / 2, -s.size / 2, s.size, s.size);
   ctx.restore();
 }
 
-// A four-pointed glint of light.
+// A star flare where light crosses: a hot core, long thin rays across
+// and shorter ones up and down, and faint diagonal glints, like the
+// sparkles where the lines cross in the reference art.
 function glint(ctx, x, y, r, alpha) {
   if (alpha <= 0.01) return;
-  const g = ctx.createRadialGradient(x, y, 0, x, y, r * 1.6);
-  g.addColorStop(0, `rgba(${ARC_CORE}, ${0.7 * alpha})`);
-  g.addColorStop(0.35, `rgba(${ARC_GLOW}, ${0.2 * alpha})`);
-  g.addColorStop(1, `rgba(${ARC_GLOW}, 0)`);
+  alpha = Math.min(1, alpha);
+  glowAt(ctx, x, y, r * 2.2, alpha * 0.9);
+  const ray = (dx, dy, len, w, a) => {
+    const g = ctx.createLinearGradient(x - dx * len, y - dy * len, x + dx * len, y + dy * len);
+    g.addColorStop(0, `rgba(${ARC_GLOW}, 0)`);
+    g.addColorStop(0.5, `rgba(${ARC_HOT}, ${a})`);
+    g.addColorStop(1, `rgba(${ARC_GLOW}, 0)`);
+    ctx.strokeStyle = g;
+    ctx.lineWidth = w;
+    ctx.beginPath();
+    ctx.moveTo(x - dx * len, y - dy * len);
+    ctx.lineTo(x + dx * len, y + dy * len);
+    ctx.stroke();
+  };
+  ray(1, 0, r * 3.4, 1, 0.9 * alpha);
+  ray(0, 1, r * 2.2, 0.9, 0.75 * alpha);
+  ray(0.7071, 0.7071, r * 1.1, 0.6, 0.35 * alpha);
+  ray(0.7071, -0.7071, r * 1.1, 0.6, 0.35 * alpha);
+}
+
+// Energy running through the rings: comets of light, two to a ring,
+// coursing round in turn one way and the other, as if power flowed
+// through the circle. radii: [radius, direction, speed]; `fast` speeds them up.
+// Each comet is one smooth stroke along its ring whose light fades evenly
+// from its head back to nothing (a gradient that runs round the circle),
+// with a soft hairline glow under it and a small, gentle head.
+function ringPulses(ctx, t, cx, cy, radii, alpha, fast = 1) {
+  if (alpha <= 0.01) return;
+  const TAU = Math.PI * 2;
+  ctx.save();
+  ctx.lineCap = "round";
+  radii.forEach(([r, dir, sp], j) => {
+    for (let n = 0; n < 2; n++) {
+      const head = dir * (t / sp) * fast + n * Math.PI + j * 1.7;
+      const len = 0.42 + 0.12 * Math.sin(t / 1900 + j + n);   // its tail, in radians
+      // The tail runs back from the head against the direction of travel.
+      const a0 = dir > 0 ? head - len : head, a1 = dir > 0 ? head : head + len;
+      const fadeIn = (o) => {
+        if (!ctx.createConicGradient) return `rgba(${ARC_GLOW}, ${o * 0.5})`;
+        const g = ctx.createConicGradient(a0, cx, cy), L = len / TAU;
+        // brightness along the tail, eased so it thins out smoothly to nothing
+        for (let k = 0; k <= 8; k++) {
+          const u = k / 8, along = dir > 0 ? u : 1 - u;   // 0 at the tail's end, 1 at the head
+          g.addColorStop(u * L, `rgba(${along > 0.8 ? ARC_HOT : ARC_GLOW}, ${o * Math.pow(along, 1.7)})`);
+        }
+        g.addColorStop(Math.min(1, L + 0.002), `rgba(${ARC_GLOW}, 0)`);
+        return g;
+      };
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, a0, a1);
+      ctx.strokeStyle = fadeIn(alpha * 0.25);
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.strokeStyle = fadeIn(alpha * 0.85);
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      glowAt(ctx, cx + Math.cos(head) * r, cy + Math.sin(head) * r, 4.5, alpha * 0.8);
+    }
+  });
+  ctx.restore();
+}
+
+// Light that lives: the circle is drawn into a scratch canvas, then masked
+// so its lines fade and return here and there instead of burning evenly.
+// Around the ring, the brightness drifts in waves at several speeds; on
+// top of that, soft patches dim the lines in passing spots, swelling and
+// clearing on their own time. strength 0 leaves it steady; draw(x) draws
+// the circle into the scratch canvas, in screen coordinates.
+const FLICK = { c: null, x: null };
+function livingLight(ctx, t, { cx, cy, R1, R2, extent, strength = 1, seed = 0, mask = null }, draw) {
+  const main = ctx.canvas, m = ctx.getTransform(), d = m.a || 1;
+  if (!FLICK.c) { FLICK.c = document.createElement("canvas"); FLICK.x = FLICK.c.getContext("2d"); }
+  if (FLICK.c.width !== main.width || FLICK.c.height !== main.height) {
+    FLICK.c.width = main.width; FLICK.c.height = main.height;
+  }
+  const x = FLICK.x;
+  x.setTransform(d, 0, 0, d, 0, 0);
+  // Only the part of the screen the circle covers.
+  const W = main.width / d, H = main.height / d;
+  const L = Math.max(0, Math.floor(cx - extent)), T = Math.max(0, Math.floor(cy - extent));
+  const Rr = Math.min(W, Math.ceil(cx + extent)), B = Math.min(H, Math.ceil(cy + extent));
+  if (Rr <= L || B <= T) return;
+  x.globalCompositeOperation = "source-over";
+  x.globalAlpha = 1;
+  x.clearRect(L, T, Rr - L, B - T);
+  x.save();
+  x.globalCompositeOperation = "lighter";
+  draw(x);
+  x.restore();
+  // An extra shape to keep (feathered fragments of the circle, while it is still forming).
+  if (mask) {
+    x.globalCompositeOperation = "destination-in";
+    x.fillStyle = mask(x);
+    x.fillRect(L, T, Rr - L, B - T);
+    x.globalCompositeOperation = "source-over";
+  }
+
+  if (strength > 0) {
+    // Soft round patches where the lines fade out for a while, then return,
+    // drifting a little as they go. Only round, feathered shapes: anything
+    // with a straight edge would read as the light being cut.
+    x.globalCompositeOperation = "destination-out";
+    for (let i = 0; i < 11; i++) {
+      const period = 2800 + hash01(i + seed * 7) * 4200;
+      const tt = t + hash01(i + 40) * period, n = Math.floor(tt / period), ph = (tt % period) / period;
+      const a = hash01(n * 3 + i) * Math.PI * 2 + ph * 0.25 * (i % 2 ? 1 : -1);
+      const r = R1 * 0.5 + hash01(n * 5 + i + 9) * (R2 + 20 - R1 * 0.5);
+      const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r;
+      const size = 45 + hash01(n * 7 + i) * 85;
+      const s = strength * 0.8 * Math.sin(Math.PI * ph) ** 2;
+      if (s < 0.02) continue;
+      const g = x.createRadialGradient(px, py, 0, px, py, size);
+      g.addColorStop(0, `rgba(0, 0, 0, ${s})`);
+      g.addColorStop(0.45, `rgba(0, 0, 0, ${s * 0.7})`);
+      g.addColorStop(1, "rgba(0, 0, 0, 0)");
+      x.fillStyle = g;
+      x.fillRect(px - size, py - size, size * 2, size * 2);
+    }
+    x.globalCompositeOperation = "source-over";
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(FLICK.c, L * d, T * d, (Rr - L) * d, (B - T) * d, L * d, T * d, (Rr - L) * d, (B - T) * d);
+  ctx.restore();
+}
+
+// ── The circle, element by element ──────────────────────
+// The circle's elements (ARC_PARTS) are shared out, in order, over every
+// card picked and every card turned: a spread of n cards has 2n steps, and
+// the earlier steps take any extra. Each step but the last adds its
+// elements faintly, one after another; the last card turned adds the final
+// ones and lights them all, so the circle comes together on the final
+// reveal. One card: picking it draws the inner five, turning it the outer
+// five. Five cards: one element a step, the outermost on the last turn.
+
+const PART_INTRO = 1300;     // how long an element takes to materialise (ms)
+const PART_STAGGER = 260;    // between elements that arrive in the same step (ms)
+const FINAL_STAGGER = 150;   // between the last elements, arriving in the final flare (ms)
+
+// Which step brings element i in, and its place among that step's elements.
+function partStep(i, steps) {
+  const N = STEPPED.length, base = Math.floor(N / steps), extra = N % steps;
+  let start = 0;
+  for (let s = 0; s < steps; s++) {
+    const size = base + (s < extra ? 1 : 0);
+    if (i < start + size) return { step: s, order: i - start };
+    start += size;
+  }
+  return { step: steps - 1, order: 0 };
+}
+
+function magicStep() {
+  if (!S) return;
+  if (!MG.ctx) sizeMagic();
+  MG.total = Math.min(STEPPED.length, 2 * S.n);
+  if (MG.steps.length >= MG.total - 1) return;   // the last step is the final reveal
+  MG.steps.push(performance.now());
+  startMagic();
+}
+
+// A faint warm haze in the air around the circle, with a breath of violet
+// at its edge where it meets the night.
+function arcHaze(ctx, cx, cy, r, alpha) {
+  if (alpha <= 0.01) return;
+  const g = ctx.createRadialGradient(cx, cy, r * 0.15, cx, cy, r);
+  g.addColorStop(0, `rgba(${ARC_DEEP}, ${0.025 * alpha})`);
+  g.addColorStop(0.55, `rgba(${ARC_DEEP}, ${0.035 * alpha})`);
+  g.addColorStop(0.8, `rgba(150, 100, 220, ${0.025 * alpha})`);
+  g.addColorStop(1, "rgba(150, 100, 220, 0)");
   ctx.fillStyle = g;
-  ctx.fillRect(x - r * 1.6, y - r * 1.6, r * 3.2, r * 3.2);
-  ctx.strokeStyle = `rgba(${ARC_CORE}, ${0.85 * alpha})`;
-  ctx.lineWidth = 0.7;
-  ctx.beginPath();
-  ctx.moveTo(x - r, y); ctx.lineTo(x + r, y);
-  ctx.moveTo(x, y - r * 0.75); ctx.lineTo(x, y + r * 0.75);
-  ctx.stroke();
+  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+}
+
+// The great circle, as far as it has come. Before the final reveal (from
+// is null) only the elements the steps have added show, faintly. The final
+// reveal (from: when it started) is always its climax, however much was
+// left to add: light bursts at its heart, a shockwave races outward, the
+// last elements materialise in quick succession as the whole circle flares
+// far brighter than it will rest, and sparks shower out over the cards.
+// Then it settles, whole: energy runs round its rings, sparks flare where
+// its lines cross and dust drifts.
+// Every element turns on its own: its own direction and a pace of its own,
+// far apart from the others (degrees a second, the sign the direction),
+// from the innermost circle sweeping round to the crown barely drifting.
+// Its speed also swings, slowing and picking up again over a long cycle
+// (seconds), so it never lurches. Neighbours mostly turn against each other.
+const SPIN_DEG = {
+  //        pace   cycle  phase
+  core:    [ 9.0,   7.0, 0.0],
+  midband: [-6.0,   8.0, 1.1],
+  star:    [ 4.0,   9.0, 2.3],
+  ring:    [-1.6,  11.0, 0.7],
+  runes:   [ 2.8,   8.5, 3.1],
+  sats:    [ 5.0,   7.5, 4.2],
+  oring:   [-1.1,  12.0, 1.9],
+  orunes:  [ 2.2,  10.0, 5.0],
+  squares: [-3.0,   9.5, 2.8],
+  arcs:    [ 0.7,  14.0, 0.4],
+  crown:   [-0.5,  16.0, 3.6],
+};
+// The same in the units partTurn works in: T is ms per radian (signed),
+// P is ms per radian of the speed's swing.
+const SPIN = Object.fromEntries(Object.entries(SPIN_DEG).map(([k, [deg, cyc, ph]]) =>
+  [k, [(1000 * 180) / Math.PI / deg, (cyc * 1000) / (Math.PI * 2), ph]]));
+// Its angle at time t: a steady turn plus a slow swing whose speed is 0.75
+// of the steady one, so the total speed rises and falls between a quarter
+// and one and three-quarters of its pace without ever turning back.
+function partTurn(key, t) {
+  const [T, P, ph] = SPIN[key];
+  return t / T + 0.75 * (P / Math.abs(T)) * Math.sin(t / P + ph);
 }
 
 function drawArcaneCircle(ctx, t, { cx, cy, R1, seal, from }) {
-  const el = t - from;
   const TAU = Math.PI * 2, top = -Math.PI / 2;
-  const S2 = sigilsFor(R1), R2 = S2.R2;
-
+  const S2 = sigilsFor(R1), R2 = S2.R2, Rm = R1 * 0.56;
+  const el = from == null ? -1 : t - from;
   const breathe = 0.86 + 0.14 * Math.sin(t / 2300);
-  const rotIn = t / 60000, rotOut = -t / 90000;
-  // The inner sigil sweeps in; then light gathers, ripples run outward,
-  // and the outer sigil grows out of the inner one.
-  const sweep = easeIO(arcSeg(el, 0, 2200));
-  const G0 = 3400, GLEN = 4200;
-  const grow = easeOut(arcSeg(el, G0, G0 + GLEN));
-  const charge = Math.sin(Math.PI * arcSeg(el, 2000, G0 + 1600)) ** 2;
+  // The bloom breathes on its own slow beat, out of step with the lines.
+  const glow = 0.85 + 0.2 * Math.sin(t / 1700) * Math.sin(t / 3900 + 1);
+  // Faint while it gathers; full once the last card is turned.
+  const together = from == null ? 0 : easeIO(arcSeg(el, 0, 1500));
+  // The final reveal's flare: up fast, then easing back down to rest.
+  const surge = from == null ? 0 : easeIO(swell(arcSeg(el, 0, 3000), 0.12));
+
+  // Where each element has got to: those the steps added so far, then
+  // the rest in quick succession as the final reveal flares.
+  const total = MG.total || 2 * (S ? S.n : 5);
+  let rank = 0;
+  const state = ARC_PARTS.map((e, i) => {
+    // The crown comes only with the final reveal, the last to arrive, just after the rest.
+    if (e.final) {
+      if (from == null) return null;
+      const p = arcSeg(t - (from + 60 + rank * FINAL_STAGGER + 220), 0, PART_INTRO + 300);
+      return p > 0 ? { e, i, p, early: false } : null;
+    }
+    const { step, order } = partStep(i, total);
+    let at = MG.steps[step];
+    const early = at != null;
+    if (early) at += order * PART_STAGGER;
+    else {
+      if (from == null) return null;
+      at = from + 60 + rank++ * FINAL_STAGGER;
+    }
+    const p = arcSeg(t - at, 0, PART_INTRO);
+    return p > 0 ? { e, i, p, early } : null;
+  }).filter(Boolean);
+  const cascadeEnd = 60 + Math.max(0, rank - 1) * FINAL_STAGGER + PART_INTRO;
+  const has = (key) => state.some((s) => s.e.key === key && s.p >= 1);
 
   ctx.save();
   ctx.globalCompositeOperation = "lighter";
 
-  // The seal where the threads met (on the table only).
+  // The seal where the threads met (on the table, at the end).
   if (seal) {
     const sb = arcSeg(el, 0, 900);
     const sg = ctx.createRadialGradient(seal.x, seal.y, 0, seal.x, seal.y, 24);
@@ -1992,90 +2384,106 @@ function drawArcaneCircle(ctx, t, { cx, cy, R1, seal, from }) {
     rune(ctx, RUNES[SEAL], seal.x, seal.y, 10, t / 9000, 0.7 * sb);
   }
 
-  // The inner sigil, revealed by a sweep from the top with a spark at its edge.
-  const aIn = 0.5 * breathe * (1 + 0.7 * charge);
-  if (sweep < 1) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, S2.inner.size, top, top + TAU * sweep);
-    ctx.closePath();
-    ctx.clip();
-    drawSigil(ctx, S2.inner, cx, cy, rotIn, 1, aIn);
-    ctx.restore();
-    if (sweep > 0) {
-      const ang = top + TAU * sweep;
-      glint(ctx, cx + Math.cos(ang) * R1, cy + Math.sin(ang) * R1, 7, 0.9 * Math.sin(Math.PI * sweep));
-    }
-  } else {
-    drawSigil(ctx, S2.inner, cx, cy, rotIn, 1, aIn);
-  }
+  arcHaze(ctx, cx, cy, (from == null ? R2 : S2.R3) * 1.25, (0.35 + 0.65 * together + 1.5 * surge) * (state.length / ARC_PARTS.length) * breathe);
 
-  // Ripples of light run outward, each reaching further than the last.
-  for (let k = 0; k < 3; k++) {
-    const p = arcSeg(el, 2300 + k * 650, 2300 + k * 650 + 1400);
-    if (p <= 0 || p >= 1) continue;
-    const r = R1 + (R2 - R1) * ((k + 1) / 3.2) * easeOut(p);
-    ctx.strokeStyle = `rgba(${ARC_CORE}, ${0.35 * Math.sin(Math.PI * p)})`;
-    ctx.lineWidth = 1.2 * (1 - p) + 0.3;
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, TAU);
-    ctx.stroke();
-  }
-
-  // The outer sigil grows out of the inner circle to its full size.
-  if (grow > 0) {
-    const k = R1 / R2 + (1 - R1 / R2) * grow;
-    drawSigil(ctx, S2.outer, cx, cy, rotOut + (1 - grow) * 0.6, k, 0.45 * breathe * Math.min(1, grow * 1.6));
-    // A soft swell of light as it arrives.
-    const arrive = Math.sin(Math.PI * arcSeg(grow, 0.6, 1)) ** 2;
-    if (arrive > 0.01) {
-      ctx.strokeStyle = `rgba(${ARC_GLOW}, ${0.25 * arrive})`;
-      ctx.lineWidth = 6;
+  // The final reveal: a burst of light at the heart, and a shockwave
+  // racing out past the edge of the circle.
+  if (surge > 0) {
+    glowAt(ctx, cx, cy, R1 * 1.1, 0.5 * surge);
+    const w = arcSeg(el, 0, 1500);
+    if (w < 1) {
+      const r = R1 * 0.2 + (S2.R3 * 1.2 - R1 * 0.2) * easeOut(w), a = 1 - w;   // out past the crown
+      ctx.lineWidth = 9 * a + 2;
+      ctx.strokeStyle = `rgba(${ARC_GLOW}, ${0.22 * a})`;
       ctx.beginPath();
-      ctx.arc(cx, cy, R2 * k, 0, TAU);
+      ctx.arc(cx, cy, r, 0, TAU);
+      ctx.stroke();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = `rgba(${ARC_HOT}, ${0.75 * a})`;
       ctx.stroke();
     }
   }
 
-  // Glints sparking where lines cross: the hexagram's points, the
-  // squares' corners and the satellites, each on its own slow beat.
+  // Draws one element as far as it has materialised: it fades up while its
+  // glow swells and settles, easing in a touch from larger, and flares
+  // with the rest of the circle in the final reveal. Each turns at its own
+  // drifting pace (partTurn).
+  const draw = (x, { e, p, early }) => {
+    const full = e.group === "in" ? 0.55 : 0.5;
+    const q = easeIO(p);
+    const a = full * breathe * (early ? 0.6 + 0.4 * together : 1) * q * (1 + 1.1 * surge);
+    const k = 1 + 0.035 * (1 - easeOut(p));
+    const g = glow * (1 + 2.2 * Math.sin(Math.PI * p) ** 2) * (1 + 1.6 * surge);
+    const rot = partTurn(e.key, t);
+    drawSigil(x, S2.parts[e.key], cx, cy, rot, k, a, g);
+  };
+  livingLight(ctx, t, { cx, cy, R1, R2, extent: S2.R3 + 40, strength: 1 - 0.85 * surge }, (x) => state.forEach((s) => draw(x, s)));
+
+  // Sparks twinkling along each element as it materialises.
+  state.forEach(({ i, p }) => {
+    if (p >= 1) return;
+    const r = S2.radius[ARC_PARTS[i].key];
+    for (let j = 0; j < 5; j++) {
+      const ph = arcSeg(p, j * 0.12, j * 0.12 + 0.5);
+      if (ph <= 0 || ph >= 1) continue;
+      const ang = hash01(i * 13 + j) * TAU;
+      glint(ctx, cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, 4 + 3 * hash01(i + j * 7), 0.8 * Math.sin(Math.PI * ph));
+    }
+  });
+
+  // Energy running round the rings that have formed: faint while it
+  // gathers, full once it's whole.
+  const radii = [];
+  if (has("core")) radii.push([R1 * 0.3, -1, 3000]);
+  if (has("midband")) radii.push([Rm, 1, 3600]);
+  if (has("ring")) radii.push([R1, 1, 5200], [R1 - 22, -1, 4300]);
+  if (has("oring")) radii.push([R2, -1, 7600], [R2 - 26, 1, 6400]);
+  if (radii.length) ringPulses(ctx, t, cx, cy, radii, (0.25 + 0.3 * (from == null ? 0 : arcSeg(el, cascadeEnd - 600, cascadeEnd + 900))) * breathe);
+
+  // Sparks where lines cross: the star's points, the small circles on the
+  // rim and the squares' corners, each on its own slow beat.
   const spark = (x, y, r, i, a) => {
     const v = Math.max(0, Math.sin(t / (1300 + (i % 5) * 270) + i * 2.17));
-    glint(ctx, x, y, r, a * v * v);
+    glint(ctx, x, y, r, a * v * v * (0.5 + 0.5 * together));
   };
-  if (sweep >= 1) {
+  if (has("crown")) {
+    // a soft spark now and then on the crown's medallions
+    for (let i = 0; i < 8; i++) {
+      const ang = top + (i / 8) * TAU + partTurn("crown", t);
+      spark(cx + Math.cos(ang) * S2.R3, cy + Math.sin(ang) * S2.R3, 5, i + 60, 0.4);
+    }
+  }
+  if (has("star")) {
     for (let i = 0; i < 6; i++) {
-      const ang = top + (i / 6) * TAU + rotIn;
+      const ang = top + (i / 6) * TAU + partTurn("star", t);
       spark(cx + Math.cos(ang) * (R1 - 22), cy + Math.sin(ang) * (R1 - 22), 5, i, 0.6);
     }
+  }
+  if (has("sats")) {
     for (let i = 0; i < 3; i++) {
-      const ang = top + (i / 3) * TAU + Math.PI / 3 + rotIn;
+      const ang = top + (i / 3) * TAU + Math.PI / 3 + partTurn("sats", t);
       spark(cx + Math.cos(ang) * R1, cy + Math.sin(ang) * R1, 8, i + 20, 0.5);
     }
   }
-  if (grow >= 1) {
+  if (has("squares")) {
     for (let i = 0; i < 8; i++) {
-      const ang = top + (i / 8) * TAU + rotOut;
+      const ang = top + (i / 8) * TAU + partTurn("squares", t);
       spark(cx + Math.cos(ang) * (R2 - 26), cy + Math.sin(ang) * (R2 - 26), i % 2 ? 5 : 7, i + 40, 0.65);
     }
   }
 
-  // Dust drifting round between the circles, twinkling.
-  const reachR = R1 + (R2 + 20 - R1) * grow;
-  for (let i = 0; i < 36; i++) {
-    const r = R1 * 0.55 + hash01(i) * (R2 + 20 - R1 * 0.55);
-    if (r > reachR) continue;
-    const ang = hash01(i + 100) * TAU + (t / (16000 + hash01(i + 200) * 30000)) * (i % 2 ? 1 : -1);
-    const tw = Math.max(0, Math.sin(t / (700 + hash01(i + 300) * 1400) + i));
-    const a = 0.55 * tw * Math.min(1, sweep * 2);
-    if (a < 0.02) continue;
-    const x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r;
-    ctx.fillStyle = `rgba(${ARC_CORE}, ${a})`;
-    ctx.fillRect(x - 0.8, y - 0.8, 1.6, 1.6);
-    if (i % 4 === 0) {
-      ctx.fillStyle = `rgba(${ARC_GLOW}, ${a * 0.25})`;
-      ctx.fillRect(x - 2.5, y - 2.5, 5, 5);
+  // Glowing dust drifting round between the circles and rising slowly off
+  // them, each mote twinkling on its own time, once it comes together.
+  if (together > 0) {
+    for (let i = 0; i < 60; i++) {
+      const r = R1 * 0.5 + hash01(i) * (R2 + 30 - R1 * 0.5);
+      const ang = hash01(i + 100) * TAU + (t / (16000 + hash01(i + 200) * 30000)) * (i % 2 ? 1 : -1);
+      const life = 5000 + hash01(i + 400) * 6000, ph = ((t + hash01(i + 500) * life) % life) / life;
+      const tw = Math.max(0, Math.sin(t / (700 + hash01(i + 300) * 1400) + i)) * Math.sin(Math.PI * ph);
+      const a = 0.7 * tw * together;
+      if (a < 0.02) continue;
+      const x = cx + Math.cos(ang) * r, y = cy + Math.sin(ang) * r - ph * 26;
+      glowAt(ctx, x, y, 1.6 + hash01(i + 600) * (i % 5 ? 3 : 7), a);
     }
   }
   ctx.restore();
@@ -2668,11 +3076,17 @@ function emergeCards(sheet, C) {
       { opacity: 1, offset: 0.2 },
       { transform: "none", opacity: 1, filter: "brightness(1)" },
     ], { duration: 1100, delay: 220 + i * 110, easing: "cubic-bezier(.16,.84,.24,1)", fill: "backwards" });
-    a.onfinish = () => {
+    let landed = false;
+    const land = () => {
+      if (landed) return;
+      landed = true;
       c.remove();
       pic.style.visibility = "";
       pic.animate([{ filter: "brightness(1.8) drop-shadow(0 0 10px rgba(255, 210, 140, .9))" }, { filter: "none" }], { duration: 650, easing: "ease-out" });
     };
+    a.onfinish = land;
+    // If the page's animations stall (the tab hidden mid-flight), land the card anyway.
+    setTimeout(land, 220 + i * 110 + 1100 + 800);
   });
 }
 
@@ -2737,7 +3151,7 @@ function arcanePortal(points, open) {
     a: hash01(i) * Math.PI * 2, v: 60 + hash01(i + 50) * 260, life: 0.5 + hash01(i + 90) * 0.7, r: 0.8 + hash01(i + 130) * 1.6,
   }));
 
-  let sheet = null, rot = 0, last = 0;
+  let sheet = null, rot = 0, last = 0, pulseT = null;
   const t0 = performance.now();
   requestAnimationFrame(function frame(now) {
     const s = (now - t0) / 1000, dt = last ? Math.min(0.05, s - last) : 0;
@@ -2819,20 +3233,23 @@ function arcanePortal(points, open) {
     });
 
     // The circle spins up: slow, then faster and faster until the window
-    // opens. The table's circle carries on from its own slow turn (and its
-    // own build, if it's still forming); a new one forms first.
+    // opens. The table's circle carries on from its own slow turn; a new
+    // one forms first.
     const speed = (G ? 0 : 0.25) + 11 * Math.pow(arcSeg(s, 0.6, OPEN), 2.2) * (1 - 0.8 * arcSeg(s, OPEN, END));
     rot += speed * dt;
+    // The energy's own clock: it carries on from the table's, then runs up to eight times as fast.
+    pulseT = pulseT === null ? now : pulseT + dt * 1000 * (1 + 7 * arcSeg(s, 0.4, OPEN));
     const rotIn = G ? now / 60000 + rot : rot, rotOut = G ? -now / 90000 - rot * 0.7 : -rot * 0.7;
-    const elT = G ? now - G.from : 0;
-    const sweep = G ? easeIO(arcSeg(elT, 0, 2200)) : easeIO(arcSeg(s, 0.3, 0.8));
-    const grow = G ? easeOut(arcSeg(elT, 3400, 7600)) : easeOut(arcSeg(s, 0.55, 1.0));
+    // The table's circle is taken over whole (it has come together by the
+    // time the summary can be opened); a new one sweeps in and grows.
+    const sweep = G ? 1 : easeIO(arcSeg(s, 0.3, 0.8));
+    const grow = G ? 1 : easeOut(arcSeg(s, 0.55, 1.0));
     const charge = arcSeg(s, 0.4, OPEN);
     // It swells as it spins up; then the widening window pushes it out further.
     const push = swellAt(s) * Math.max(1, r / RW);
     const fade = 1 - arcSeg(Math.max(1, r / RW), 1.25, 2.4);   // fading only once the window pushes it out
     // It starts exactly as bright as it was on the table, then grows stronger.
-    const base = G ? 0.5 * (0.86 + 0.14 * Math.sin(now / 2300)) : 0.55;
+    const base = G ? 0.55 * (0.86 + 0.14 * Math.sin(now / 2300)) : 0.55;
     const bright = (base + 0.75 * Math.pow(charge, 1.5)) * fade;
     // Once the window is open, the circle shows only around it, never over the page inside.
     ctx.save();
@@ -2842,41 +3259,71 @@ function arcanePortal(points, open) {
       ctx.arc(C.x, C.y, r, 0, Math.PI * 2);
       ctx.clip("evenodd");
     }
-    // At speed, the runes blur: the circle is drawn a few times, just behind itself.
+    // The haze and the bloom grow as it charges: the light spills further into the air.
+    const glowUp = (G ? 0.85 + 0.2 * Math.sin(now / 1700) * Math.sin(now / 3900 + 1) : 1) + 0.9 * Math.pow(charge, 1.3);
+    arcHaze(ctx, C.x, C.y, R2 * push * 1.3, (1 + 1.5 * charge) * fade * Math.max(sweep, 0.3));
+    // At speed, the runes blur: the circle is drawn a few times, just behind
+    // itself (only the first copy carries the bloom). It's drawn through the
+    // same living light as on the table, whose flicker steadies into full
+    // power as it charges.
+    livingLight(ctx, G ? now : s * 1000, { cx: C.x, cy: C.y, R1: R1 * push, R2: R2 * push, extent: 4000, strength: 1 - 0.8 * charge }, (x) => {
     const blur = Math.min(4, 1 + Math.floor(speed / 2.5));
     for (let k = 0; k < blur; k++) {
       const lag = k * 0.035 * Math.min(1, speed / 4), a = bright / (1 + k * 1.3);
-      if (sweep < 1) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(C.x, C.y);
-        ctx.arc(C.x, C.y, sig.inner.size, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sweep);
-        ctx.closePath();
-        ctx.clip();
-        drawSigil(ctx, sig.inner, C.x, C.y, rotIn - lag, push, a);
-        ctx.restore();
+      const layer = (s2, rr, kk, aa) => drawSigil(x, s2, C.x, C.y, rr, kk, aa, k === 0 ? glowUp : 0);
+      if (G) {
+        // The table's circle: every element carries on from its own drifting
+        // turn and spins up in its own direction, the inner ones fastest and
+        // the crown most gently; each blurs just behind itself.
+        ARC_PARTS.forEach((e) => {
+          const dir = Math.sign(SPIN[e.key][0]), f = e.group === "in" ? 1 : e.group === "crown" ? 0.5 : 0.7;
+          layer(sig.parts[e.key], partTurn(e.key, now) + dir * (rot * f - lag), push, e.group === "in" ? a : a * 0.9);
+        });
       } else {
-        drawSigil(ctx, sig.inner, C.x, C.y, rotIn - lag, push, a);
+        // A circle forming afresh (from the History): the inner sigil sweeps
+        // in, the outer one grows out of it, both turning as one piece.
+        if (sweep < 1) {
+          x.save();
+          x.beginPath();
+          x.moveTo(C.x, C.y);
+          x.arc(C.x, C.y, sig.inner.size, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * sweep);
+          x.closePath();
+          x.clip();
+          layer(sig.inner, rotIn - lag, push, a);
+          x.restore();
+        } else {
+          layer(sig.inner, rotIn - lag, push, a);
+        }
+        const kOut = (R1 / R2 + (1 - R1 / R2) * grow) * push;
+        if (grow > 0) layer(sig.outer, rotOut + lag, kOut, a * 0.9 * grow);
+        if (grow > 0) layer(sig.parts.crown, rot * 0.5 + lag, kOut, a * 0.9 * grow);
       }
-      if (grow > 0) drawSigil(ctx, sig.outer, C.x, C.y, rotOut + lag, (R1 / R2 + (1 - R1 / R2) * grow) * push, a * 0.9 * grow);
       // The larger rings: each sweeps in from the top, swelling out of the
       // ring inside it, and turns against its neighbour, faster as it builds.
       BEYOND.forEach((b, j) => {
         const p = easeOut(arcSeg(s, b.at, b.at + 0.55));
         if (p <= 0) return;
-        const k = (1 + (b.k - 1) * p) * push;
+        const kb = (1 + (b.k - 1) * p) * push;
         const rotB = (b.dir > 0 ? rotIn : rotOut) * (1.2 + j * 0.3) + j;
-        ctx.save();
+        x.save();
         if (p < 1) {
-          ctx.beginPath();
-          ctx.moveTo(C.x, C.y);
-          ctx.arc(C.x, C.y, sig.outer.size * k, -Math.PI / 2 - Math.PI * p, -Math.PI / 2 + Math.PI * p);
-          ctx.closePath();
-          ctx.clip();
+          x.beginPath();
+          x.moveTo(C.x, C.y);
+          x.arc(C.x, C.y, sig.outer.size * kb, -Math.PI / 2 - Math.PI * p, -Math.PI / 2 + Math.PI * p);
+          x.closePath();
+          x.clip();
         }
-        drawSigil(ctx, sig.outer, C.x, C.y, rotB + lag * b.dir, k, a * (0.75 - j * 0.15) * Math.min(1, p * 1.5));
-        ctx.restore();
+        layer(sig.outer, rotB + lag * b.dir, kb, a * (0.75 - j * 0.15) * Math.min(1, p * 1.5));
+        x.restore();
       });
+    }
+    });
+    // Energy racing round the rings, faster and brighter as it charges.
+    if (sweep >= 1) {
+      const g = (R1 / R2 + (1 - R1 / R2) * grow) * push;
+      const radii = [[R1 * push, 1, 5200], [(R1 - 22) * push, -1, 4300], [R1 * 0.56 * push, 1, 3600]];
+      if (grow > 0.5) radii.push([R2 * g, -1, 7600], [(R2 - 26) * g, 1, 6400]);
+      ringPulses(ctx, pulseT, C.x, C.y, radii, (0.55 + 0.45 * charge) * fade);
     }
     if (sweep > 0 && sweep < 1) {
       const a = -Math.PI / 2 + Math.PI * 2 * sweep;
