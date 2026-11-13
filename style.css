@@ -218,6 +218,29 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .cotd.fade { opacity: 0; }
 #home { overflow-x: clip; }
 
+/* The table's magic: rune rings, light and lines drawn behind the cards */
+.magic {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+#table > :not(.magic) { position: relative; z-index: 1; }
+/* The elemental frames sit above the cards, on their edges */
+.magic.frames { z-index: 2; }
+
+/* The rune circle and flare that open the reading summary, above everything */
+.summon {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9000;
+  pointer-events: none;
+}
+
 /* The burst of sunlight when the card of the day is revealed */
 .sun {
   position: absolute;
@@ -344,9 +367,27 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .slot-card:has(.tcard) { border-color: transparent; }
 .slot-label {
-  margin-top: 6px;
-  font-size: .85rem;
+  margin-top: 4px;
+  font-size: .78rem;
   color: var(--muted);
+}
+/* The card's name and key word, shown once it's turned over.
+   The lines are there from the start (empty), so nothing jumps. */
+.slot-name, .slot-kw { opacity: 0; transition: opacity .5s; }
+.slot-name.shown, .slot-kw.shown { opacity: 1; }
+.slot-name {
+  margin-top: 6px;
+  font-size: clamp(.8rem, 3.4vw, .95rem);
+  line-height: 1.2;
+  color: var(--ink);
+}
+.slot-kw {
+  margin-top: 1px;
+  font-size: clamp(.74rem, 3.1vw, .86rem);
+  font-style: italic;
+  line-height: 1.2;
+  color: var(--gold);
+  transition-delay: .25s;
 }
 
 .hint {
@@ -394,12 +435,51 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 .flyer { position: fixed; z-index: 20; pointer-events: none; }
 
-#newBtn {
+/* When the spread is done: the summary and a new reading */
+.end-actions {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
 }
+.summary-btn { background: rgba(201, 169, 110, .14); border-color: rgba(201, 169, 110, .85); }
+#newBtn { padding: 9px 22px; font-size: .95rem; }
+
+/* The reading's summary */
+.summary-title { margin-bottom: 10px; }
+.summary-cards { justify-content: safe center; margin-bottom: 6px; }
+.summary-kw { font-size: .72rem; font-style: italic; color: var(--gold); text-align: center; }
+.summary { text-align: left; }
+.summary-part, .summary-asks { margin-top: 18px; text-align: left; }
+.summary-part ul { margin: 0; padding: 0; list-style: none; }
+.summary-part li { margin: 0 0 .8em; line-height: 1.45; }
+.summary-part li strong {
+  display: block;
+  font-weight: normal;
+  color: var(--gold);
+}
+.summary-part li strong::first-letter { text-transform: uppercase; }
+.summary-meaning > p:not(.asks-title) { margin: 0 0 .8em; font-size: 1.05rem; line-height: 1.55; }
+.summary-meaning .asks { margin-top: 10px; }
+.summary-asks { margin-top: 18px; }
+.summary-q { display: block; margin-top: 3px; color: var(--muted); font-size: .92rem; }
+
+/* The lens buttons: each reads the spread from another angle */
+.lens-title {
+  margin: 14px 0 2px;
+  font-size: .78rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .8;
+}
+.lens-chips { flex-wrap: wrap; justify-content: center; overflow: visible; padding-bottom: 4px; }
+.lens-chips .chip { font-size: .85rem; padding: 6px 11px; }
 
 /* ── 3. The card window ───────────────────── */
 
@@ -486,31 +566,45 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--gold);
   opacity: .8;
 }
+/* Astrology, element and number, each in its own box, side by side */
 .corr {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 5px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
   margin: 0 0 6px;
-  padding: 10px 14px;
+}
+.corr-item {
+  flex: 1 1 auto;
+  min-width: 84px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 10px;
   border: 1px solid rgba(201, 169, 110, .3);
   border-radius: 8px;
-  text-align: left;
-  font-size: .92rem;
+  text-align: center;
 }
-.corr dt {
+.corr-label {
   color: var(--gold);
   opacity: .8;
-  font-size: .72rem;
+  font-size: .68rem;
   letter-spacing: .12em;
   text-transform: uppercase;
-  align-self: center;
 }
-.corr dd { margin: 0; }
+.corr-value { font-size: 1rem; line-height: 1.25; }
 .meaning { width: 100%; }
 .meaning .asks-title { margin-top: 6px; }
-.asks ul { margin: 0; padding: 0 0 0 1.1em; }
-.asks li { margin: 0 0 .7em; line-height: 1.45; font-style: italic; }
+/* Keywords always sit centered, also inside the Upright and Reversed parts */
+.details-text .keywords { text-align: center; }
+.asks ul { margin: 0; padding: 0 0 0 1.2em; }
+.asks li {
+  margin: 0 0 .75em;
+  font-size: 1.08rem;
+  line-height: 1.5;
+}
 .empty-note { color: var(--muted); font-style: italic; }
 #quickClose { margin-top: 6px; }
 
@@ -542,7 +636,202 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .details-text { text-align: left; margin-top: 12px; }
 
-.browse-entry { display: block; margin: 26px auto 0; }
+/* The game-style title when a card is revealed */
+.rpg-title {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 120px;
+  transform: translateY(-100%);   /* its bottom edge sits at "top", just above the cards */
+  z-index: 400;
+  padding: 0 16px;
+  text-align: center;
+  pointer-events: none;
+}
+.rpg-title > * { max-width: 20rem; margin-left: auto; margin-right: auto; }
+.rpg-name {
+  margin: 4px auto;
+  font-size: clamp(1.1rem, 5vw, 1.4rem);
+  line-height: 1.15;
+  letter-spacing: .05em;
+  color: #f3dfae;
+  text-shadow:
+    0 0 5px rgba(255, 214, 140, .45),
+    0 0 14px rgba(201, 169, 110, .35),
+    0 1px 2px rgba(0, 0, 0, .9);
+}
+.rpg-word { display: inline-block; white-space: nowrap; }
+.rpg-letter { display: inline-block; }
+.rpg-sub {
+  margin: 0 auto 4px;
+  font-size: .62rem;
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .85;
+}
+/* The ornament above and below: two fading lines with a small diamond between */
+.rpg-line { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.rpg-line i {
+  flex: 0 1 28%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201, 169, 110, .8));
+}
+.rpg-line i:last-child { background: linear-gradient(90deg, rgba(201, 169, 110, .8), transparent); }
+.rpg-line b {
+  width: 5px;
+  height: 5px;
+  transform: rotate(45deg);
+  background: var(--gold);
+  box-shadow: 0 0 6px rgba(255, 214, 140, .7);
+}
+
+.home-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 26px auto 0;
+}
+.home-links .pill { padding: 11px 20px; }
+
+/* A line to carry with you */
+.carry-line {
+  margin: 4px 0 16px;
+  color: var(--gold);
+  font-size: 1.15rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+.carry-line::before { content: "“"; }
+.carry-line::after { content: "”"; }
+
+/* What's in the picture */
+.picture-guide ul { margin: 0; padding: 0; list-style: none; }
+.picture-guide li { margin: 0 0 .8em; line-height: 1.45; }
+.picture-guide strong {
+  display: block;
+  color: var(--gold);
+  font-weight: normal;
+  font-size: 1.02rem;
+}
+
+/* Your note */
+.note-box { width: 100%; margin: 18px 0 4px; text-align: center; }
+.note-preview {
+  margin: 10px 0 0;
+  white-space: pre-line;
+  text-align: left;
+  font-style: italic;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.note-area {
+  display: block;
+  width: 100%;
+  min-height: 8em;
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1.05rem;   /* 16px or more, so iPhones don't zoom in */
+  line-height: 1.5;
+  color: inherit;
+  background: var(--panel);
+  border: 1px solid rgba(201, 169, 110, .4);
+  border-radius: 10px;
+  resize: vertical;
+}
+.note-area:focus { outline: none; border-color: rgba(201, 169, 110, .85); }
+.note-status { margin: 6px 0 0; font-size: .82rem; color: var(--muted); text-align: right; }
+
+/* Your draws */
+.history-sum { margin: 0 0 6px; }
+.history-list { margin: 0; padding: 0 0 0 1.1em; color: var(--muted); }
+.history-list li { margin: 0 0 .35em; }
+
+/* Related cards, and the cards in a past reading */
+.related-title { margin: 10px 0 6px; font-size: .95rem; color: var(--muted); }
+.related-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scroll-snap-type: x proximity;
+}
+.related-card {
+  flex: 0 0 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  scroll-snap-align: start;
+}
+.related-pic {
+  width: 72px;
+  aspect-ratio: 4 / 7;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .45);
+}
+.related-pic .placeholder { font-size: .6rem; }
+.related-name { font-size: .78rem; line-height: 1.2; text-align: center; }
+.related-label {
+  font-size: .62rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .8;
+  text-align: center;
+  min-height: 1.2em;
+}
+
+/* Moving between cards on a card's page */
+.bar .count { font-size: .95rem; color: var(--muted); }
+.bar-nav { display: flex; justify-content: flex-end; gap: 4px; width: 80px; }
+.nav-btn {
+  width: 38px;
+  height: 38px;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--gold);
+  background: none;
+  border: 1px solid rgba(201, 169, 110, .35);
+  border-radius: 50%;
+}
+.nav-btn:disabled { opacity: .3; }
+
+/* ── 6. Your history ──────────────────────── */
+
+.history-body { max-width: 36rem; margin: 0 auto; }
+.history-note { margin: 4px 0 12px; color: var(--muted); font-size: .95rem; line-height: 1.45; text-align: center; }
+.history-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 18px; }
+.history-empty { text-align: center; margin-top: 24px; }
+.history-day {
+  margin: 22px 0 8px;
+  font-weight: normal;
+  font-size: .78rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: .85;
+}
+.reading {
+  margin: 0 0 12px;
+  padding: 10px 12px 4px;
+  background: var(--panel);
+  border: 1px solid rgba(201, 169, 110, .2);
+  border-radius: 10px;
+}
+.reading-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.link.small { padding: 4px 2px; font-size: .85rem; }
+.link.gold { color: var(--gold); }
+.reading-actions { display: flex; gap: 14px; }
 
 /* The on/off switches under the spreads */
 .options {
@@ -685,3 +974,36 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .grid-pic .placeholder { font-size: .7rem; }
 .grid-name { margin-top: 6px; font-size: .82rem; line-height: 1.25; }
 .grid .empty-note { grid-column: 1 / -1; text-align: center; }
+
+/* ── Wide screens (computers, tablets on their side) ──────
+   The phone layout above stays as it is. Here the reading table grows
+   to fill the screen: cards sized by the window's height, all of a
+   spread in one row, a bigger fan and deck, larger names under cards. */
+@media (min-width: 900px) and (min-height: 560px) {
+  .slots {
+    --gap: 28px;
+    /* the height left for a row of cards, once the header, the names,
+       the hint and the fan are taken off */
+    --row-h: calc(100dvh - 470px);
+    margin-top: 16px;
+  }
+  .slots[data-count="1"] { --w: min(calc(var(--row-h) * 4 / 7), 320px); }
+  .slots[data-count="2"] { --w: min(calc(var(--row-h) * 4 / 7), 300px); }
+  .slots[data-count="3"] { --w: min(calc(var(--row-h) * 4 / 7), 280px); }
+  .slots[data-count="4"] { --w: min(calc(var(--row-h) * 4 / 7), calc((100vw - 200px) / 4), 260px); --cols: 4; }
+  .slots[data-count="5"] { --w: min(calc(var(--row-h) * 4 / 7), calc((100vw - 220px) / 5), 240px); --cols: 5; --gap: 24px; }
+
+  .slot-name { margin-top: 10px; font-size: 1.12rem; }
+  .slot-kw { font-size: 1rem; }
+  .slot-label { font-size: .9rem; margin-top: 6px; }
+
+  .deck-area { height: 230px; --fw: 80px; --fh: 140px; }
+  .hint { font-size: 1.1rem; }
+
+  #table .bar #spreadName { font-size: 1.35rem; }
+  #table .bar .link { font-size: 1.1rem; width: auto; min-width: 80px; white-space: nowrap; }
+
+  /* The home screen opens up a little too. */
+  .spread-list { max-width: 34rem; gap: 12px; }
+  .spread-btn { width: calc((100% - 4 * 12px) / 5); }
+}

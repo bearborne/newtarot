@@ -29,12 +29,17 @@
     <button class="cotd" id="cotd">Reveal card of the day</button>
     <p class="home-sub">Choose a spread</p>
     <div class="spread-list" id="spreadList"></div>
-    <button class="pill browse-entry" id="browseBtn">Browse the cards</button>
+    <div class="home-links">
+      <button class="pill" id="browseBtn">Browse the cards</button>
+      <button class="pill" id="historyBtn">Your history</button>
+    </div>
     <div class="options" id="options"></div>
   </section>
 
   <!-- 2. The table: shuffle, pick, turn -->
   <section class="screen" id="table" hidden>
+    <canvas class="magic" id="magic" aria-hidden="true"></canvas>
+    <canvas class="magic frames" id="frames" aria-hidden="true"></canvas>
     <header class="bar">
       <button class="link" id="backBtn">‹ Spreads</button>
       <span id="spreadName"></span>
@@ -43,9 +48,12 @@
     <div class="slots" id="slots"></div>
     <p class="hint" id="hint"></p>
     <div class="deck-area" id="deckArea">
-      <div class="deck" id="deck" role="button" aria-label="Shuffle the deck"></div>
+      <div class="deck" id="deck" role="button" aria-label="Spread the cards"></div>
       <div class="fan" id="fan"></div>
-      <button class="pill" id="newBtn" hidden>New reading</button>
+      <div class="end-actions" id="endActions" hidden>
+        <button class="pill summary-btn" id="summaryBtn">✦ Reading summary</button>
+        <button class="pill" id="newBtn">New reading</button>
+      </div>
     </div>
   </section>
 
@@ -86,6 +94,25 @@
         <div class="tags all-tags" id="allTags"></div>
       </div>
       <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <!-- 6. Your history: past readings, and backups -->
+  <div class="sheet" id="history" hidden>
+    <header class="bar">
+      <button class="link" id="historyBack">‹ Back</button>
+      <span class="bar-title">Your history</span>
+      <span class="bar-space"></span>
+    </header>
+    <div class="history-body">
+      <p class="history-note">Your readings and notes are saved on this device only.
+        Export a backup to keep them safe, or import one on another phone or computer.</p>
+      <div class="history-actions">
+        <button class="pill small" id="exportBtn">Export backup</button>
+        <button class="pill small" id="importBtn">Import backup</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+      <div id="historyList"></div>
     </div>
   </div>
 

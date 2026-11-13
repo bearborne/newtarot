@@ -14,12 +14,17 @@
      name: "The Fool",
      image: "cards/the-fool.jpg",
      keywords: ["beginnings", "trust", "freedom"],
-     correspondences: { astrology: "Uranus", element: "Air", number: "0", kabbalah: "Aleph, path 11" },
+     correspondences: { astrology: "Uranus", element: "Air", number: "0" },
      short: `A short description, shown when you tap a turned card.`,
      reversed: `What the card means when it comes out upside down.`,
      questions: [
        `What are you ready to begin?`,
        `Where could a little more trust help you?`,
+     ],
+     line: `I can begin before I know the whole way.`,
+     picture: [
+       `The white rose: a pure, open intention.`,
+       `The small dog: instinct and loyal companionship.`,
      ],
      details: `Your own longer notes, shown under "More about this card".
 
@@ -38,7 +43,10 @@
 
    The correspondences follow the Golden Dawn system: the Minor cards Two to Ten each rule ten
    degrees of a sign (the Four of Cups is "Moon in Cancer"), the court cards rule a span of the
-   zodiac, and the Major cards have a planet or sign and a Hebrew letter. Leave one out to hide it.
+   zodiac, and the Major cards have a planet or sign. Leave one out to hide it.
+
+   `line` is a short line to carry with you, shown in gold under the card's name. `picture` is
+   "What's in the picture": one line per symbol, written as `The thing: what it means`.
 
    Keep the comma after each `}`. To add more cards (like the Minor Arcana), copy a whole block.
    A card with no picture yet shows its name on a plain face.
@@ -59,6 +67,37 @@ Under the spreads there are three switches. All start off, and each phone or com
 - **Tags** shows the golden tag boxes.
 - **Court cards** adds the Pages, Knights, Queens and Kings to the deck. In cards.js they're marked `court: true`.
 - **Reversed cards** lets a card come out upside down, about half the time. The card window then says "Reversed".
+
+## The reading summary
+
+When every card of a spread is turned, **Reading summary** appears. It's put together from the
+cards themselves: the themes and words they share, their elements, numbers, astrology and the
+things in their pictures, and a short story with one question.
+
+The **Read it as** buttons read the same cards from different angles: Past · Present · Future,
+Situation · Challenge · Advice, Mind · Body · Spirit, You · Them · Between you, and more. If your
+spread's positions have real names in spreads.js (like "Past" or "Advice"), an **As laid out**
+button comes first and shows each position's question too. Each card's wording for this comes from
+its `inReading` block in cards.js: what it brings upright and reversed, its advice, and its
+challenge. Past readings in Your history
+have a **Summary** link too. Under each turned card you also see its name and the one keyword
+most connected to the other cards in the spread.
+
+## Your history, notes and backups
+
+Every reading and every card of the day is saved on the device the moment the cards are drawn.
+**Your history** on the home screen lists them by day; tap a card to open it, and swipe through
+the reading. Each card's page shows how often you've drawn it, and has an **Add a note** button
+that opens a box for your own thoughts, saved as you type.
+
+Everything stays on that one phone or computer. The app asks the browser to keep it, but deleting
+the app or clearing website data still erases it, so now and then use **Export backup** on the
+history screen and keep the file somewhere safe (iCloud Drive, email). **Import backup** adds a
+backup's readings and notes to what's already there; nothing is overwritten. It also moves your
+history between devices.
+
+On a card's page, swipe left or right (or use the arrows at the top, or the arrow keys) to move
+through the reading, the card list or the related cards you opened it from.
 
 ## Spreads and their questions
 
