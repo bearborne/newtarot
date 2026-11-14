@@ -4958,6 +4958,8 @@ function renderSky(opening = false) {
   key.append(el("span", "sky-rx", "℞"), el("span", "", "retrograde: seems to move backwards, a time to look back"));
   list.append(key);
   side.append(lunation, list);
+  // Every sign shows at one size: if the longest doesn't fit its tile, they all shrink together.
+  fitOneLine([...list.querySelectorAll(".sky-where")]);
 }
 
 // A soft gold glow on whatever changed since the last step.
