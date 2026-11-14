@@ -4955,7 +4955,7 @@ function renderSky(opening = false) {
   });
   const key = el("div", "sky-row sky-key");
   key.style.setProperty("--i", bodies.length);
-  key.append(el("span", "sky-rx", "℞"), el("span", "", "retrograde: seems to move backwards, a time to look back"));
+  key.append(el("span", "sky-glyph sky-rx", "℞"), el("span", "", "retrograde: seems to move backwards, a time to look back"));
   list.append(key);
   side.append(lunation, list);
   // Every sign shows at one size: if the longest doesn't fit its tile, they all shrink together.

@@ -1689,15 +1689,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sky-rx { color: #e3a08c; font-size: .85em; }
 .sky-key { font-family: var(--read); font-style: italic; font-size: .64rem; color: var(--muted); line-height: 1.3;
   background: none; border-style: dashed; }
-.sky-key .sky-rx { text-align: center; font-style: normal; font-size: 1rem; }
+.sky-key .sky-glyph { color: #e3a08c; font-style: normal; text-shadow: 0 0 8px rgba(227, 160, 140, .45); }
 /* The tile's text grows with the tile, so it fills the box on any screen. */
-.sky-row { container-type: inline-size; grid-template-columns: auto minmax(0, max-content); justify-content: center; }
-.sky-row .sky-glyph { min-width: 1.3em; font-size: clamp(1.15rem, 15cqi, 2.6rem); }
+/* Every tile is laid out the same way, so the glyphs, names and signs form
+   straight columns down the list. */
+.sky-row { container-type: inline-size; grid-template-columns: auto minmax(0, 1fr); justify-content: start; padding-left: 6%; padding-right: 4%; }
+.sky-row .sky-glyph { width: 1.3em; text-align: center; font-size: clamp(1.15rem, 15cqi, 2.6rem); }
 .sky-row .sky-name { font-size: clamp(.8rem, 7.5cqi, 1.3rem); }
 .sky-row .sky-where { display: block; overflow: hidden; font-size: clamp(.95rem, 10cqi, 1.9rem); }
 .sky-row .sky-rule { font-size: clamp(.66rem, 6.6cqi, 1.1rem); }
 .sky-key > span:last-child { font-size: clamp(.66rem, 6cqi, 1rem); }
-.sky-key .sky-rx { font-size: clamp(1rem, 10cqi, 1.7rem); }
 /* Opening: tiles blur in one after another, like the floating words on the home screen. */
 .entering .sky-row, .entering .sky-moon, .entering .sky-steps, .entering .sky-when {
   animation: sky-tile-in .6s ease-out both; animation-delay: calc(300ms + var(--i, 0) * 45ms); }
@@ -1729,11 +1730,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .sky-moon-note { font-size: .8rem; }
   .sky-side .sky-list { flex: 1; margin: 0; grid-template-rows: repeat(6, 1fr); gap: 8px; }
   /* Here each tile has a set size, so its text fills both its width and height. */
-  .sky-row { container-type: size; padding: 4px 12px; }
+  .sky-row { container-type: size; padding: 4px 4% 4px 7%; }
   .sky-row .sky-glyph { font-size: min(18cqi, 52cqh); }
   .sky-row .sky-name { font-size: min(8.5cqi, 20cqh); }
   .sky-row .sky-where { font-size: min(13cqi, 32cqh); }
   .sky-row .sky-rule { font-size: min(7.5cqi, 17cqh); }
   .sky-key > span:last-child { font-size: min(7.4cqi, 16.5cqh); }
-  .sky-key .sky-rx { font-size: min(12cqi, 30cqh); }
 }
