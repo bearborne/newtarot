@@ -3158,7 +3158,7 @@ function summaryQuestions(entries, lens) {
   const meet = f.findIndex((d, i) => d === "right" && f[i + 1] === "left");
   if (meet >= 0) whole.push(`What are ${nameOf(meet)} and ${nameOf(meet + 1)} saying to each other?`);
   whole.push("What is one small step you could take this week?");
-  if (!themes.length) whole.unshift("What links these cards for you?");
+  if (!themes.length) whole.unshift(n > 1 ? "What links these cards for you?" : "Where does this card show up in your life right now?");
 
   // As many questions for the reading as it has cards (each card asks one too).
   const asked = [...new Set(whole)].slice(0, n);
