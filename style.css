@@ -1599,3 +1599,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* bigger dots on the phone; many cards wrap to a second row of six */
 .tile-pips { font-size: .66rem; white-space: normal; max-width: 7.2em; margin-inline: auto; margin-right: auto; padding-left: .32em; }
 @media (min-width: 900px) { .summary-page .tile-pips { font-size: .7rem; } }
+
+/* ── Sky now ── */
+.sky-when { margin: 4px 0 12px; text-align: center; color: var(--muted); font-size: .9rem; }
+.sky-body .asks-title { margin-top: 18px; }
+.sky-tiles .tile { font: inherit; color: inherit; cursor: pointer; padding: 8px 4px; }
+.sky-tiles .tile-top { font-size: .66rem; }
+@media (hover: hover) { .sky-tiles .tile:hover { background: rgba(201, 169, 110, .1); } }
+.sky-link { margin-top: 14px; font-size: 1rem; }

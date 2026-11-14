@@ -4689,6 +4689,102 @@ $("browseBack").addEventListener("click", async () => {
   browse.hidden = true;
 });
 
+// ── Sky now: where the planets are this moment ─────────
+// Worked out on the phone with astronomy.js, no internet needed.
+// Each planet links to three cards: its own Major card, the Major card
+// of the sign it's in, and the Minor card of that sign's ten degrees.
+
+const GLYPHS = { Sun: "☉", Moon: "☽", Mercury: "☿", Venus: "♀", Mars: "♂", Jupiter: "♃",
+  Saturn: "♄", Uranus: "♅", Neptune: "♆", Pluto: "♇" };
+const MOON_PHASES = ["New Moon", "Waxing crescent", "First quarter", "Waxing gibbous",
+  "Full Moon", "Waning gibbous", "Last quarter", "Waning crescent"];
+const CARD_NUMBERS = ["", "Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+const SIGN_SUITS = ["Wands", "Pentacles", "Swords", "Cups"];   // Fire, Earth, Air, Water, in sign order
+
+const cardNamed = (name) => CARDS.find((c) => c.name === name);
+const cardOfStar = (star) => CARDS.slice(0, 22).find((c) => (c.correspondences || {}).astrology === star);
+
+// The Minor card ruling these ten degrees: Aries 0–10° is the Two of Wands,
+// 10–20° the Three, 20–30° the Four; Taurus starts the Five of Pentacles…
+function decanCard(sign, deg) {
+  const n = 2 + (sign % 3) * 3 + Math.min(2, Math.floor(deg / 10));
+  return cardNamed(`${CARD_NUMBERS[n]} of ${SIGN_SUITS[sign % 4]}`);
+}
+
+function eclipticLon(body, date) {
+  if (body === "Sun") return Astronomy.SunPosition(date).elon;
+  if (body === "Moon") return Astronomy.EclipticGeoMoon(date).lon;
+  return Astronomy.Ecliptic(Astronomy.GeoVector(body, date, true)).elon;
+}
+
+function skyNow(date = new Date()) {
+  const later = new Date(date.getTime() + 3600e3);
+  const planets = PLANETS.map((body) => {
+    const lon = eclipticLon(body, date);
+    // Retrograde: the planet seems to slip backwards along the zodiac.
+    const step = ((eclipticLon(body, later) - lon + 540) % 360) - 180;
+    const sign = Math.floor(lon / 30), deg = lon % 30;
+    return { body, sign, deg, retro: step < 0 && body !== "Sun" && body !== "Moon" };
+  });
+  const angle = Astronomy.MoonPhase(date);
+  const moon = {
+    name: MOON_PHASES[Math.round(angle / 45) % 8],
+    lit: Math.round(Astronomy.Illumination("Moon", date).phase_fraction * 100),
+    day: Math.floor(angle / 360 * 29.53) + 1,
+  };
+  return { date, planets, moon };
+}
+
+function renderSky() {
+  const box = $("skyBody");
+  box.innerHTML = "";
+  if (typeof Astronomy === "undefined") {
+    box.append(el("p", "empty-note", "The sky couldn't be worked out on this device."));
+    return;
+  }
+  const { date, planets, moon } = skyNow();
+  box.append(el("p", "sky-when", `${dateText(date)} · ${timeText(date)}`));
+
+  const moonTiles = el("div", "tiles");
+  moonTiles.style.setProperty("--per", 1);
+  const mt = el("div", "tile");
+  mt.append(el("span", "tile-top", "Moon phase"), el("span", "tile-main", moon.name),
+    el("span", "tile-note", `${moon.lit}% lit · day ${moon.day} of 29`));
+  moonTiles.append(mt);
+  box.append(moonTiles);
+
+  const grid = el("div", "tiles sky-tiles");
+  grid.style.setProperty("--per", 2);
+  planets.forEach((p) => {
+    const sign = SIGNS[p.sign];
+    const cards = [
+      { card: cardOfStar(p.body), label: p.body },
+      { card: cardOfStar(sign), label: sign },
+      { card: decanCard(p.sign, p.deg), label: `${sign} ${Math.floor(p.deg)}°` },
+    ].filter((x) => x.card);
+    const tile = el("button", "tile");
+    tile.append(
+      el("span", "tile-top", `${GLYPHS[p.body]}︎ ${p.body}`),
+      el("span", "tile-main", `${sign} ${Math.floor(p.deg)}°${p.retro ? " ℞" : ""}`),
+      ...cards.slice(1).map((x) => el("span", "tile-note", x.card.name)));
+    tile.setAttribute("aria-label", `${p.body} in ${sign}, ${Math.floor(p.deg)} degrees${p.retro ? ", retrograde" : ""}`);
+    tile.addEventListener("click", () =>
+      openDetails(cards.map((x) => detailsItem(x.card, false, x.label))));
+    grid.append(tile);
+  });
+  box.append(el("p", "asks-title", "Planets"), grid);
+  box.append(el("p", "tile-legend", "Tap a planet for its cards. ℞ retrograde."));
+}
+
+$("skyBtn").addEventListener("click", () => {
+  renderSky();
+  slideIn($("skySheet"));
+});
+$("skyBack").addEventListener("click", async () => {
+  await slideOut($("skySheet"));
+  $("skySheet").hidden = true;
+});
+
 // ── 6. Your history ─────────────────────────────────────
 
 function renderHistory() {

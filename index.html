@@ -37,6 +37,7 @@
       <button class="pill" id="browseBtn">Browse the cards</button>
       <button class="pill" id="historyBtn">Your history</button>
     </div>
+    <button class="cotd sky-link" id="skyBtn">✦ Sky now</button>
     <div class="options" id="options"></div>
   </section>
 
@@ -120,6 +121,16 @@
     </div>
   </div>
 
+  <!-- 7. Sky now: the planets this moment -->
+  <div class="sheet" id="skySheet" hidden>
+    <header class="bar">
+      <button class="link" id="skyBack">‹ Back</button>
+      <span class="bar-title">Sky now</span>
+      <span class="bar-space"></span>
+    </header>
+    <div class="history-body sky-body" id="skyBody"></div>
+  </div>
+
   <!-- The little window a golden tag opens -->
   <div class="tag-tip" id="tagTip" hidden></div>
 
@@ -128,6 +139,7 @@
   <script src="symbols.js"></script>
   <script src="spreads.js"></script>
   <script src="pickfx.js"></script>
+  <script src="astronomy.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
