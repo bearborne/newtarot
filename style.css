@@ -1645,10 +1645,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sky-side { display: contents; }
 .sky-cols .sky-moon { order: -1; }
 @media (min-width: 900px) {
-  #skySheet .sky-body { max-width: 60rem; }
-  .sky-cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: center; }
-  .sky-side { display: block; }
-  .sky-wheel { max-width: 520px; margin: 0 auto; }
-  .sky-side .sky-moon { margin-bottom: 10px; }
-  .sky-side .sky-list { max-width: none; }
+  /* The wheel is as tall as the screen allows; the list stretches to match it. */
+  #skySheet .sky-body { max-width: 1200px; }
+  .sky-cols { display: grid; grid-template-columns: auto minmax(340px, 460px); justify-content: center;
+    gap: 56px; align-items: stretch; margin-top: 8px; }
+  .sky-wheel { width: min(680px, calc(100vh - 170px), 52vw); max-width: none; margin: 0; }
+  .sky-side { display: flex; flex-direction: column; }
+  .sky-side .sky-moon { margin-bottom: 12px; padding: 10px; }
+  .sky-moon-main { font-size: 1.1rem; }
+  .sky-moon-note { font-size: .8rem; }
+  .sky-side .sky-list { max-width: none; width: 100%; margin: 0; flex: 1; display: flex; flex-direction: column; }
+  .sky-row { flex: 1; grid-template-columns: 30px 1fr auto; gap: 12px; padding: 4px 18px; }
+  .sky-glyph { font-size: 1.3rem; }
+  .sky-name, .sky-where { font-size: 1.05rem; }
+  .sky-name small { font-size: .76rem; }
+  .sky-steps { margin-bottom: 4px; }
 }
