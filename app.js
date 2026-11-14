@@ -4744,13 +4744,19 @@ function eclipticLon(body, date) {
   return Astronomy.Ecliptic(Astronomy.GeoVector(body, date, true)).elon;
 }
 
+// Degrees, minutes and seconds within the sign: 21°26′07″.
+function degText(x) {
+  const t = Math.floor(x * 3600), two = (n) => String(n).padStart(2, "0");
+  return `${Math.floor(t / 3600)}°${two(Math.floor(t / 60) % 60)}′${two(t % 60)}″`;
+}
+
 function skyAt(date) {
   const later = new Date(date.getTime() + 3600e3);
   const bodies = SKY_BODIES.map((body) => {
     const lon = eclipticLon(body, date);
     // Retrograde: the planet seems to slip backwards along the zodiac.
     const step = ((eclipticLon(body, later) - lon + 540) % 360) - 180;
-    return { body, lon, sign: Math.floor(lon / 30), deg: Math.floor(lon % 30),
+    return { body, lon, sign: Math.floor(lon / 30), deg: Math.floor(lon % 30), dms: degText(lon % 30),
       retro: step < 0 && body !== "Sun" && body !== "Moon" };
   });
   const angle = Astronomy.MoonPhase(date);
@@ -4927,7 +4933,7 @@ function renderSky(opening = false) {
 
   const moonPos = bodies.find((b) => b.body === "Moon");
   const lunation = el("div", "sky-moon");
-  lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${SIGNS[moonPos.sign]} ${moonPos.deg}°`),
+  lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${SIGNS[moonPos.sign]} ${moonPos.dms}`),
     el("span", "sky-moon-note", `${moon.lit}% lit · day ${moon.day} of 29`));
   flashIfChanged(lunation, "moon", lunation.textContent, opening);
   fitOneLine([lunation.firstChild]);   // phase and Moon sign stay on one line
@@ -4947,7 +4953,7 @@ function renderSky(opening = false) {
     const row = el("div", "sky-row");
     row.style.setProperty("--i", i);
     const info = el("span", "sky-info");
-    const where = el("span", "sky-where", `${SIGNS[p.sign]} ${p.deg}°`);
+    const where = el("span", "sky-where", `${SIGNS[p.sign]} ${p.dms}`);
     if (p.retro) where.append(el("span", "sky-rx", " ℞"));
     info.append(el("span", "sky-name", p.body), where, el("small", "sky-rule", RULES[p.body]));
     row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), info);
@@ -4957,7 +4963,33 @@ function renderSky(opening = false) {
   side.append(lunation, list);
   // Every sign shows at one size: if the longest doesn't fit its tile, they all shrink together.
   fitOneLine([...list.querySelectorAll(".sky-where")]);
+  fitSkyToWheel();
 }
+
+// On a wide screen the Moon bar and tiles grow together until they're as
+// tall as the wheel beside them (or as wide as the room left allows).
+function fitSkyToWheel() {
+  const side = document.querySelector("#skySheet .sky-side"), cols = side?.parentElement;
+  if (!side) return;
+  side.style.fontSize = "";
+  if (!matchMedia("(min-width: 900px)").matches) return;
+  const fit = () => {
+    if (!side.isConnected) return;
+    const wheel = WHEEL.svg.getBoundingClientRect();
+    if (!wheel.height) return;
+    const gap = parseFloat(getComputedStyle(cols).columnGap) || 0;
+    const room = cols.clientWidth - wheel.width - gap;
+    let size = parseFloat(getComputedStyle(side).fontSize);
+    for (let i = 0; i < 3; i++) {   // text and boxes don't grow in exact proportion, so settle in a few steps
+      const r = side.getBoundingClientRect();
+      size *= Math.min(wheel.height / r.height, room / r.width);
+      side.style.fontSize = `${size.toFixed(2)}px`;
+    }
+  };
+  fit();
+  document.fonts?.ready.then(fit);
+}
+addEventListener("resize", () => { if (!$("skySheet").hidden) fitSkyToWheel(); });
 
 // A soft gold glow on whatever changed since the last step.
 function flashIfChanged(node, key, value, opening) {
@@ -4970,6 +5002,7 @@ $("skyBtn").addEventListener("click", () => {
   SKY.shown = {};
   renderSky(true);
   slideIn($("skySheet"));
+  fitSkyToWheel();   // now it's showing and can be measured
   skyField.size();
   skyField.start();
 });
