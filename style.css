@@ -1659,6 +1659,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sky-wheel .w-runes { transform-origin: 150px 150px; animation: sky-turn 240s linear infinite; }
 .sky-wheel .w-dot { fill: rgba(227, 201, 143, .55); }
 .sky-wheel .w-diamond { fill: var(--gold); filter: drop-shadow(0 0 2px rgba(255, 214, 140, .8)); }
+/* Pointing at a tile: its planet grows and glows, its sign's stretch lights up, the rest dim. */
+.sky-wheel .w-seg { fill: rgba(255, 214, 130, 0); transition: fill .25s; }
+.sky-wheel .w-seg.hot { fill: rgba(255, 214, 130, .2); }
+.sky-wheel .w-sign, .sky-wheel .w-planet { transition: font-size .25s, fill .25s, fill-opacity .25s; }
+.sky-wheel .w-sign.hot { fill: #ffe6a8; font-size: 15px; }
+.sky-wheel.focus .w-planet:not(.hot) { fill-opacity: .3; }
+.sky-wheel.focus .w-tick:not(.hot) { stroke-opacity: .3; }
+.sky-wheel .w-planet.hot { font-size: 24px; fill: #ffe6a8; }
+.sky-wheel .w-planet.retro.hot { fill: #f2b7a4; }
+.sky-row { cursor: pointer; }
+.sky-row.hot { background: rgba(201, 169, 110, .14); border-color: rgba(255, 214, 130, .75);
+  box-shadow: 0 0 14px rgba(255, 214, 130, .25); }
 @keyframes sky-turn { to { transform: rotate(360deg); } }
 @keyframes sky-moon-glow {
   0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 214, 130, .35)); }

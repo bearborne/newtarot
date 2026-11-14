@@ -4770,7 +4770,7 @@ function skyAt(date) {
 // The zodiac wheel: Aries on the left, going round anticlockwise. It's
 // built once and kept, so when the time steps the planets glide round
 // to their new places instead of jumping.
-const WHEEL = { svg: null, planets: {}, moon: null, lit: null, raf: 0 };
+const WHEEL = { svg: null, planets: {}, signs: [], moon: null, lit: null, raf: 0, hot: null };
 const WS = 300, WC = WS / 2, WR = 136, WBAND = 20;
 const WHEEL_NS = "http://www.w3.org/2000/svg";
 const wheelPt = (lon, r) => { const a = Math.PI - lon * Math.PI / 180; return [WC + r * Math.cos(a), WC - r * Math.sin(a)]; };
@@ -4818,9 +4818,15 @@ function buildWheel() {
     svgEl(svg, "line", { x1, y1, x2, y2, class: d % 30 ? "w-faint" : "w-line" });
   }
   SIGN_GLYPHS.forEach((g, i) => {
+    // The sign's stretch of the band, lit up when one of its planets is pointed at.
+    const [ox1, oy1] = wheelPt(i * 30, WR), [ox2, oy2] = wheelPt(i * 30 + 30, WR);
+    const [ix1, iy1] = wheelPt(i * 30, WR - WBAND), [ix2, iy2] = wheelPt(i * 30 + 30, WR - WBAND);
+    const seg = svgEl(svg, "path", { class: "w-seg", d: `M${ox1} ${oy1} A${WR} ${WR} 0 0 1 ${ox2} ${oy2} ` +
+      `L${ix2} ${iy2} A${WR - WBAND} ${WR - WBAND} 0 0 0 ${ix1} ${iy1} Z` });
     const [x, y] = wheelPt(i * 30 + 15, WR - WBAND / 2);
     const t = svgEl(svg, "text", { x, y, class: "w-sign" }, asText(g));
     t.style.animationDelay = `${i * 50}ms`;
+    WHEEL.signs[i] = { seg, glyph: t };
   });
   const planets = svgEl(svg, "g", { filter: "url(#skyGlow)" });
   SKY_BODIES.forEach((body) => {
@@ -4852,6 +4858,7 @@ function updateWheel(bodies, moon, opening) {
     while (placed.some((q) => q.ring === ring && Math.abs(((q.lon - b.lon + 540) % 360) - 180) < 10)) ring -= 20;
     placed.push({ lon: b.lon, ring });
     const p = WHEEL.planets[b.body];
+    p.sign = b.sign;
     p.glyph.classList.toggle("retro", b.retro);
     let from = p.lon == null || opening ? b.lon - 140 : p.lon;
     let to = from + ((((b.lon - from) % 360) + 540) % 360) - 180;
@@ -4945,6 +4952,7 @@ function renderSky(opening = false) {
   cols.append(WHEEL.svg, side);
   box.append(cols);
   WHEEL.svg.getBoundingClientRect();   // settle it in its new place before it moves
+  if (opening) WHEEL.hot = null;
   updateWheel(bodies, moon, opening);
 
   // Two columns, read down: Sun to Mars, then Jupiter to Chiron. The Moon is in the bar above.
@@ -4957,6 +4965,18 @@ function renderSky(opening = false) {
     if (p.retro) where.append(el("span", "sky-rx", " ℞"));
     info.append(el("span", "sky-name", p.body), where, el("small", "sky-rule", RULES[p.body]));
     row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), info);
+    // Pointing at a tile lights up its planet and sign on the wheel; on a phone, a tap does.
+    row.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") skyHot(p.body); });
+    row.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") skyHot(null); });
+    let down = null;
+    row.addEventListener("pointerdown", (e) => { down = [e.clientX, e.clientY]; });
+    row.addEventListener("pointerup", (e) => {
+      if (e.pointerType === "mouse") return;   // a mouse already lit it by pointing
+      if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 10) return;   // a scroll, not a tap
+      skyHot(WHEEL.hot === p.body ? null : p.body);
+    });
+    row.classList.toggle("hot", WHEEL.hot === p.body);
+    row.dataset.body = p.body;
     flashIfChanged(row, p.body, where.textContent, opening);
     list.append(row);
   });
@@ -4964,6 +4984,7 @@ function renderSky(opening = false) {
   // Every sign shows at one size: if the longest doesn't fit its tile, they all shrink together.
   fitOneLine([...list.querySelectorAll(".sky-where")]);
   fitSkyToWheel();
+  skyHot(WHEEL.hot);   // the sign may have changed with the time
 }
 
 // On a wide screen the Moon bar and tiles grow together until they're as
@@ -4990,6 +5011,19 @@ function fitSkyToWheel() {
   document.fonts?.ready.then(fit);
 }
 addEventListener("resize", () => { if (!$("skySheet").hidden) fitSkyToWheel(); });
+
+// Lights up one planet and the sign it's in (null: none).
+function skyHot(body) {
+  WHEEL.hot = body;
+  WHEEL.svg?.classList.toggle("focus", !!body);
+  Object.entries(WHEEL.planets).forEach(([b, p]) => {
+    p.glyph.classList.toggle("hot", b === body);
+    p.tick.classList.toggle("hot", b === body);
+  });
+  const sign = body ? WHEEL.planets[body].sign : -1;
+  WHEEL.signs.forEach((s, i) => { s.seg.classList.toggle("hot", i === sign); s.glyph.classList.toggle("hot", i === sign); });
+  document.querySelectorAll("#skySheet .sky-row").forEach((r) => r.classList.toggle("hot", r.dataset.body === body));
+}
 
 // A soft gold glow on whatever changed since the last step.
 function flashIfChanged(node, key, value, opening) {
