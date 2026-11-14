@@ -4925,11 +4925,12 @@ function renderSky(opening = false) {
   steps.append(back, units, fwd);
   box.append(steps);
 
-  const moonSign = SIGNS[bodies[1].sign];
+  const moonPos = bodies.find((b) => b.body === "Moon");
   const lunation = el("div", "sky-moon");
-  lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${moonSign}`),
+  lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${SIGNS[moonPos.sign]} ${moonPos.deg}°`),
     el("span", "sky-moon-note", `${moon.lit}% lit · day ${moon.day} of 29`));
   flashIfChanged(lunation, "moon", lunation.textContent, opening);
+  fitOneLine([lunation.firstChild]);   // phase and Moon sign stay on one line
 
   // On a wide screen the wheel sits beside the list; on a phone above it.
   if (!WHEEL.svg) buildWheel();
@@ -4940,9 +4941,9 @@ function renderSky(opening = false) {
   WHEEL.svg.getBoundingClientRect();   // settle it in its new place before it moves
   updateWheel(bodies, moon, opening);
 
-  // Two columns, read down: Sun to Jupiter, then Saturn to Chiron.
+  // Two columns, read down: Sun to Mars, then Jupiter to Chiron. The Moon is in the bar above.
   const list = el("div", "sky-list");
-  bodies.forEach((p, i) => {
+  bodies.filter((b) => b.body !== "Moon").forEach((p, i) => {
     const row = el("div", "sky-row");
     row.style.setProperty("--i", i);
     const info = el("span", "sky-info");
