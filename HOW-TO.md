@@ -1,4 +1,4 @@
-# Tarot – how to use it
+# Bearcana – how to use it
 
 ## Adding your cards
 

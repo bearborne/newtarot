@@ -4762,20 +4762,20 @@ $("historyBack").addEventListener("click", async () => {
 
 async function exportBackup() {
   const data = {
-    app: "Deck o' Yigito",
+    app: "Bearcana",
     version: 1,
     exported: new Date().toISOString(),
     history: loadHistory(),
     notes: loadNotes(),
   };
   const stamp = new Date().toISOString().slice(0, 10);
-  const name = `deck-o-yigito-backup-${stamp}.json`;
+  const name = `bearcana-backup-${stamp}.json`;
   const file = new File([JSON.stringify(data, null, 2)], name, { type: "application/json" });
 
   // On a phone: the share sheet, so it can go to Files, iCloud Drive or email.
   if (!canHover && navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: "Deck o' Yigito backup" });
+      await navigator.share({ files: [file], title: "Bearcana backup" });
       return;
     } catch (e) {
       if (e.name === "AbortError") return;
@@ -4796,7 +4796,7 @@ async function exportBackup() {
 // A note that differs from the one here is added below it.
 function importBackup(data) {
   if (!data || !Array.isArray(data.history) || typeof data.notes !== "object") {
-    alert("That file doesn't look like a Deck o' Yigito backup.");
+    alert("That file doesn't look like a Bearcana backup.");
     return;
   }
   const history = loadHistory();
