@@ -4840,6 +4840,8 @@ function buildWheel() {
 }
 
 function placePlanet(p, lon, ring, alpha = 1) {
+  p.lon = lon;   // where it is right now, so a step mid-glide carries on from here
+  p.ring = ring;
   const [x, y] = wheelPt(lon, ring);
   p.glyph.setAttribute("x", x);
   p.glyph.setAttribute("y", y);
@@ -4860,15 +4862,16 @@ function updateWheel(bodies, moon, opening) {
     const p = WHEEL.planets[b.body];
     p.sign = b.sign;
     p.glyph.classList.toggle("retro", b.retro);
-    let from = p.lon == null || opening ? b.lon - 140 : p.lon;
-    let to = from + ((((b.lon - from) % 360) + 540) % 360) - 180;
-    const fromRing = p.lon == null || opening ? 8 : p.ring;
-    return { p, from, to, fromRing, ring, fade: p.lon == null || opening };
+    const fresh = p.lon == null || opening;
+    const from = fresh ? b.lon - 140 : p.lon;
+    const to = from + ((((b.lon - from) % 360) + 540) % 360) - 180;
+    const fromRing = fresh ? 8 : p.ring;
+    return { p, from, to, fromRing, ring, fade: fresh };
   });
   WHEEL.moon.textContent = moon.icon;
   WHEEL.lit.textContent = `${moon.lit}% lit`;
   cancelAnimationFrame(WHEEL.raf);
-  const done = () => targets.forEach((t) => { t.p.lon = t.to; t.p.ring = t.ring; placePlanet(t.p, t.to, t.ring); });
+  const done = () => targets.forEach((t) => placePlanet(t.p, t.to, t.ring));
   if (calm) { done(); return; }
   const start = performance.now(), dur = opening ? 1400 : 900;
   const ease = (k) => 1 - Math.pow(1 - k, 3);
