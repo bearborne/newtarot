@@ -1600,49 +1600,110 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .tile-pips { font-size: .66rem; white-space: normal; max-width: 7.2em; margin-inline: auto; margin-right: auto; padding-left: .32em; }
 @media (min-width: 900px) { .summary-page .tile-pips { font-size: .7rem; } }
 
-/* ── Sky now ── */
-.sky-link { margin-top: 14px; font-size: 1rem; }
+/* ── Sky now ──
+   Dressed like the tarot screens: the same night sky, gold glow,
+   IM Fell names and diamond ornaments. */
+.sky-link { margin-top: 14px; font-size: 1rem; text-shadow: 0 0 8px rgba(255, 214, 130, .45); }
+#skySheet { --glowtxt: 0 0 3px rgba(12, 11, 17, .95), 0 0 10px rgba(255, 214, 130, .35); }
+#skySheet > :not(.sky) { position: relative; }
+#skySheet .bar-title {
+  font-family: "IM Fell English SC", var(--read);
+  font-size: 1.35rem;
+  letter-spacing: .05em;
+  color: #f3dfae;
+  text-shadow: 0 0 5px rgba(255, 214, 140, .45), 0 0 14px rgba(201, 169, 110, .35), 0 1px 2px rgba(0, 0, 0, .9);
+}
 .sky-body { max-width: 22rem; }
-.sky-when { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin: 2px 0 8px;
-  color: var(--muted); font-size: .9rem; }
-.sky-now { padding: 0; }
-.sky-steps { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
-.sky-arrow { width: 34px; height: 30px; padding: 0; border: 1px solid rgba(201, 169, 110, .5); border-radius: 999px;
-  background: none; color: var(--gold); font-size: 1.2rem; line-height: 1; }
-.sky-arrow:active { background: rgba(201, 169, 110, .15); }
-.sky-units { display: flex; border: 1px solid rgba(201, 169, 110, .3); border-radius: 999px; overflow: hidden; }
-.sky-unit { padding: 6px 9px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .8rem; }
-.sky-unit.on { background: rgba(201, 169, 110, .18); color: var(--gold); }
-.sky-moon { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 8px;
-  border: 1px solid rgba(201, 169, 110, .2); border-radius: 10px; background: rgba(201, 169, 110, .035); text-align: center; }
-.sky-moon-main { font-size: .95rem; }
-.sky-moon-note { font-family: var(--read); font-size: .72rem; color: var(--muted); }
-.sky-wheel { display: block; width: 100%; max-width: 300px; margin: 10px auto 8px; }
+.sky-orn { margin: 0 auto 4px; max-width: 16rem; }
+.sky-when { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin: 0 0 10px;
+  color: var(--gold); font-style: italic; font-size: .95rem; text-shadow: var(--glowtxt); }
+.sky-now { padding: 0; font-style: normal; }
+
+.sky-steps { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; }
+.sky-arrow { flex: none; width: 34px; height: 34px; padding: 0; border: 1px solid rgba(201, 169, 110, .6); border-radius: 50%;
+  background: rgba(201, 169, 110, .05); color: var(--gold); font-size: 1.25rem; line-height: 1;
+  transition: background-color .2s, box-shadow .2s; }
+.sky-arrow:active { background: rgba(201, 169, 110, .2); box-shadow: 0 0 14px rgba(255, 214, 130, .45); }
+@media (hover: hover) { .sky-arrow:hover { box-shadow: 0 0 12px rgba(255, 214, 130, .35); } }
+.sky-units { display: flex; gap: 3px; }
+.chip.sky-unit { padding: 5px 8px; font-size: .78rem; transition: background-color .2s, color .2s, box-shadow .2s; }
+.chip.sky-unit.on { box-shadow: 0 0 10px rgba(255, 214, 130, .4); }
+@media (max-width: 360px) {
+  .sky-steps { gap: 4px; }
+  .sky-arrow { width: 30px; height: 30px; }
+  .sky-units { gap: 2px; }
+  .chip.sky-unit { padding: 4px 6px; font-size: .74rem; }
+}
+
+.sky-moon { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px;
+  border: 1px solid rgba(201, 169, 110, .38); border-radius: 10px; text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 214, 130, .12), rgba(201, 169, 110, .03) 70%);
+  box-shadow: inset 0 0 0 1px rgba(201, 169, 110, .08), 0 0 18px rgba(255, 196, 90, .06); }
+.sky-moon-main { font-family: "IM Fell English SC", var(--read); font-size: 1.02rem; letter-spacing: .03em; color: #f3dfae;
+  text-shadow: var(--glowtxt); }
+.sky-moon-note { font-family: var(--read); font-size: .72rem; font-style: italic; color: var(--muted); }
+
+/* The wheel */
+.sky-wheel { display: block; width: 100%; max-width: 310px; margin: 10px auto 6px; overflow: visible; }
 .sky-wheel text { text-anchor: middle; dominant-baseline: central;
   font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "Noto Sans Symbols 2", sans-serif; }
-.sky-wheel .w-line { fill: none; stroke: rgba(201, 169, 110, .4); }
-.sky-wheel .w-faint { fill: none; stroke: rgba(201, 169, 110, .15); }
-.sky-wheel .w-tick { stroke: var(--ink); }
+.sky-wheel .w-line { fill: none; stroke: rgba(201, 169, 110, .55); }
+.sky-wheel .w-faint { fill: none; stroke: rgba(201, 169, 110, .2); }
+.sky-wheel .w-tick { stroke: #f3dfae; stroke-width: 1.2; }
 .sky-wheel .w-sign { font-size: 12px; fill: var(--gold); }
-.sky-wheel .w-planet { font-size: 17px; fill: var(--ink); }
-.sky-wheel .w-planet.retro { fill: #d0907e; }
-.sky-wheel .w-moon { font-size: 22px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
-.sky-wheel .w-lit { font-size: 11px; fill: var(--muted); font-family: var(--serif); }
+.sky-wheel .w-planet { font-size: 17px; fill: #f6ead0; }
+.sky-wheel .w-planet.retro { fill: #e3a08c; }
+.sky-wheel .w-moon { font-size: 22px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  animation: sky-moon-glow 4.5s ease-in-out infinite; }
+.sky-wheel .w-lit { font-size: 10.5px; fill: var(--gold); font-style: italic; font-family: var(--serif); }
+.sky-wheel .w-runes { transform-origin: 150px 150px; animation: sky-turn 240s linear infinite; }
+.sky-wheel .w-dot { fill: rgba(227, 201, 143, .55); }
+.sky-wheel .w-diamond { fill: var(--gold); filter: drop-shadow(0 0 2px rgba(255, 214, 140, .8)); }
+@keyframes sky-turn { to { transform: rotate(360deg); } }
+@keyframes sky-moon-glow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(255, 214, 130, .35)); }
+  50% { filter: drop-shadow(0 0 10px rgba(255, 214, 130, .7)); }
+}
+/* Opening: the circles draw themselves and the signs blur in, one by one. */
+.sky-wheel.drawing .w-draw { stroke-dasharray: 1; animation: sky-draw 1.1s ease-out both; }
+.sky-wheel.drawing .w-sign { animation: sky-blur-in .7s ease-out both; }
+.sky-wheel.drawing .w-runes { animation: sky-fade 1.6s ease-out both, sky-turn 240s linear infinite; }
+@keyframes sky-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes sky-fade { from { opacity: 0; } }
+@keyframes sky-blur-in { from { opacity: 0; filter: blur(3px); } }
+
+/* The list: two columns of small tiles, read down */
 .sky-list { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(6, auto); grid-auto-flow: column;
-  margin-top: 10px; border: 1px solid rgba(201, 169, 110, .2); border-radius: 10px; overflow: hidden; }
-.sky-row { display: grid; grid-template-columns: 20px 1fr; gap: 5px; align-items: center; padding: 6px 6px;
-  border-top: 1px solid rgba(201, 169, 110, .2); }
-.sky-row:nth-child(6n + 1) { border-top: 0; }
-.sky-row:nth-child(-n + 6) { border-right: 1px solid rgba(201, 169, 110, .2); }
-.sky-glyph { text-align: center; color: var(--gold); font-size: 1.1rem;
+  gap: 6px; margin-top: 10px; }
+.sky-row { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: center; padding: 6px 7px;
+  border: 1px solid rgba(201, 169, 110, .22); border-radius: 8px; background: rgba(201, 169, 110, .035);
+  transition: background-color .3s, border-color .3s; }
+@media (hover: hover) { .sky-row:hover { background: rgba(201, 169, 110, .09); border-color: rgba(201, 169, 110, .45); } }
+.sky-glyph { text-align: center; color: var(--gold); font-size: 1.15rem; text-shadow: 0 0 8px rgba(255, 214, 130, .55);
   font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "Noto Sans Symbols 2", sans-serif; }
 .sky-info { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
-.sky-name { font-size: .78rem; color: var(--muted); }
-.sky-where { font-size: .9rem; white-space: nowrap; }
-.sky-rule { font-family: var(--read); font-size: .66rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sky-rx { color: #d0907e; font-size: .85em; }
-.sky-key { font-family: var(--read); font-size: .66rem; color: var(--muted); line-height: 1.3; }
-.sky-key .sky-rx { text-align: center; font-size: 1rem; }
+.sky-name { font-family: "IM Fell English SC", var(--read); font-size: .8rem; letter-spacing: .04em; color: var(--gold); }
+.sky-where { font-size: .9rem; white-space: nowrap; color: #ece0c6; }
+.sky-rule { font-family: var(--read); font-style: italic; font-size: .64rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sky-rx { color: #e3a08c; font-size: .85em; }
+.sky-key { font-family: var(--read); font-style: italic; font-size: .64rem; color: var(--muted); line-height: 1.3;
+  background: none; border-style: dashed; }
+.sky-key .sky-rx { text-align: center; font-style: normal; font-size: 1rem; }
+/* Opening: tiles blur in one after another, like the floating words on the home screen. */
+.entering .sky-row, .entering .sky-moon, .entering .sky-steps, .entering .sky-when {
+  animation: sky-tile-in .6s ease-out both; animation-delay: calc(300ms + var(--i, 0) * 45ms); }
+.entering .sky-when, .entering .sky-steps { --i: -4; }
+@keyframes sky-tile-in { from { opacity: 0; transform: translateY(6px); filter: blur(3px); } }
+/* After a step, what changed glows for a moment. */
+.sky-row.changed, .sky-moon.changed { animation: sky-changed 1.2s ease-out; }
+@keyframes sky-changed {
+  from { border-color: rgba(255, 214, 130, .9); box-shadow: 0 0 14px rgba(255, 214, 130, .45); background: rgba(201, 169, 110, .16); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sky-wheel .w-runes, .sky-wheel .w-moon { animation: none; }
+}
+
 /* Phone: Moon bar, wheel, list, one under the other. Wide screen: the
    wheel, larger, on the left; the Moon bar and list on the right. */
 .sky-cols { display: flex; flex-direction: column; }
@@ -1652,17 +1713,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   /* The wheel is as tall as the screen allows; the list stretches to match it. */
   #skySheet .sky-body { max-width: 1200px; }
   .sky-cols { display: grid; grid-template-columns: auto minmax(340px, 460px); justify-content: center;
-    gap: 56px; align-items: stretch; margin-top: 8px; }
-  .sky-wheel { width: min(680px, calc(100vh - 170px), 52vw); max-width: none; margin: 0; }
+    gap: 56px; align-items: stretch; margin-top: 4px; }
+  .sky-wheel { width: min(660px, calc(100vh - 190px), 52vw); max-width: none; margin: 0; }
   .sky-side { display: flex; flex-direction: column; }
-  .sky-side .sky-moon { margin-bottom: 12px; padding: 10px; }
-  .sky-moon-main { font-size: 1.1rem; }
+  .sky-side .sky-moon { margin-bottom: 10px; padding: 10px; }
+  .sky-moon-main { font-size: 1.15rem; }
   .sky-moon-note { font-size: .8rem; }
-  .sky-side .sky-list { flex: 1; margin: 0; grid-template-rows: repeat(6, 1fr); }
+  .sky-side .sky-list { flex: 1; margin: 0; grid-template-rows: repeat(6, 1fr); gap: 8px; }
   .sky-row { grid-template-columns: 30px 1fr; gap: 10px; padding: 6px 14px; }
-  .sky-glyph { font-size: 1.35rem; }
-  .sky-name { font-size: .85rem; }
+  .sky-glyph { font-size: 1.4rem; }
+  .sky-name { font-size: .9rem; }
   .sky-where { font-size: 1.1rem; }
   .sky-rule, .sky-key { font-size: .74rem; }
-  .sky-steps { margin-bottom: 4px; }
 }

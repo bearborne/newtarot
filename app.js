@@ -398,59 +398,64 @@ function showHome() {
 const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const homeShown = () => !$("home").hidden && !document.hidden;
 
-// Twinkling stars and gold dust drifting upward.
-const sky = { stars: [], dust: [], running: false };
-
-function sizeSky() {
-  const c = $("sky");
-  const r = Math.min(devicePixelRatio || 1, 2);
-  c.width = innerWidth * r;
-  c.height = innerHeight * r;
-  c.getContext("2d").setTransform(r, 0, 0, r, 0, 0);
-  const n = Math.round((innerWidth * innerHeight) / 9000);
-  sky.stars = Array.from({ length: Math.min(n, 140) }, () => ({
-    x: Math.random(), y: Math.random(),
-    s: Math.random() * 1.1 + 0.3, p: Math.random() * 6, v: 0.5 + Math.random(),
-  }));
-  sky.dust = Array.from({ length: Math.min(Math.round(n / 4), 30) }, () => ({
-    x: Math.random(), y: Math.random(),
-    s: Math.random() * 1.4 + 0.7, v: 0.00025 + Math.random() * 0.0004,
-  }));
-}
-
-function drawSky(t) {
-  const x = $("sky").getContext("2d");
-  const W = innerWidth, H = innerHeight;
-  x.clearRect(0, 0, W, H);
-  x.fillStyle = "#e9e2d3";
-  for (const s of sky.stars) {
-    x.globalAlpha = calm ? 0.6 : 0.2 + 0.8 * Math.abs(Math.sin(t / 1100 * s.v + s.p));
-    x.beginPath(); x.arc(s.x * W, s.y * H, s.s, 0, 7); x.fill();
-  }
-  if (!calm) {
-    x.fillStyle = "#e3c98f";
-    for (const d of sky.dust) {
-      d.y -= d.v;
-      if (d.y < -0.02) { d.y = 1.02; d.x = Math.random(); }
-      x.globalAlpha = 0.7 * Math.sin(Math.max(0, d.y) * Math.PI);
-      x.beginPath();
-      x.arc(d.x * W + Math.sin(t / 900 + d.x * 9) * 8, d.y * H, d.s, 0, 7);
-      x.fill();
+// Twinkling stars and gold dust drifting upward, on a canvas that runs
+// while shown() is true. The home screen has one, and so does Sky now.
+function makeStarfield(canvas, shown) {
+  const f = { stars: [], dust: [], running: false };
+  f.size = () => {
+    const r = Math.min(devicePixelRatio || 1, 2);
+    canvas.width = innerWidth * r;
+    canvas.height = innerHeight * r;
+    canvas.getContext("2d").setTransform(r, 0, 0, r, 0, 0);
+    const n = Math.round((innerWidth * innerHeight) / 9000);
+    f.stars = Array.from({ length: Math.min(n, 140) }, () => ({
+      x: Math.random(), y: Math.random(),
+      s: Math.random() * 1.1 + 0.3, p: Math.random() * 6, v: 0.5 + Math.random(),
+    }));
+    f.dust = Array.from({ length: Math.min(Math.round(n / 4), 30) }, () => ({
+      x: Math.random(), y: Math.random(),
+      s: Math.random() * 1.4 + 0.7, v: 0.00025 + Math.random() * 0.0004,
+    }));
+  };
+  f.draw = (t) => {
+    const x = canvas.getContext("2d");
+    const W = innerWidth, H = innerHeight;
+    x.clearRect(0, 0, W, H);
+    x.fillStyle = "#e9e2d3";
+    for (const s of f.stars) {
+      x.globalAlpha = calm ? 0.6 : 0.2 + 0.8 * Math.abs(Math.sin(t / 1100 * s.v + s.p));
+      x.beginPath(); x.arc(s.x * W, s.y * H, s.s, 0, 7); x.fill();
     }
-  }
-  x.globalAlpha = 1;
+    if (!calm) {
+      x.fillStyle = "#e3c98f";
+      for (const d of f.dust) {
+        d.y -= d.v;
+        if (d.y < -0.02) { d.y = 1.02; d.x = Math.random(); }
+        x.globalAlpha = 0.7 * Math.sin(Math.max(0, d.y) * Math.PI);
+        x.beginPath();
+        x.arc(d.x * W + Math.sin(t / 900 + d.x * 9) * 8, d.y * H, d.s, 0, 7);
+        x.fill();
+      }
+    }
+    x.globalAlpha = 1;
+  };
+  f.start = () => {
+    if (f.running || !shown()) return;
+    if (calm) { f.draw(0); return; }
+    f.running = true;
+    requestAnimationFrame(function frame(t) {
+      if (!shown()) { f.running = false; return; }   // rests while away
+      f.draw(t);
+      requestAnimationFrame(frame);
+    });
+  };
+  return f;
 }
 
-function startSky() {
-  if (sky.running || !homeShown()) return;
-  if (calm) { drawSky(0); return; }
-  sky.running = true;
-  requestAnimationFrame(function frame(t) {
-    if (!homeShown()) { sky.running = false; return; }   // rests while away
-    drawSky(t);
-    requestAnimationFrame(frame);
-  });
-}
+const homeSky = makeStarfield($("sky"), homeShown);
+const sizeSky = () => homeSky.size();
+const drawSky = (t) => homeSky.draw(t);
+const startSky = () => homeSky.start();
 
 // The card of the day is drawn at random from the deck in play the
 // moment you reveal it (with Court cards and Reversed cards as set),
@@ -4756,49 +4761,121 @@ function skyAt(date) {
   return { bodies, moon };
 }
 
-// The zodiac wheel: Aries on the left, going round anticlockwise.
-function skyWheel(bodies, moon) {
-  const NS = "http://www.w3.org/2000/svg", S = 300, c = S / 2, R = 146, band = 20;
-  const svg = document.createElementNS(NS, "svg");
-  svg.setAttribute("viewBox", `0 0 ${S} ${S}`);
+// The zodiac wheel: Aries on the left, going round anticlockwise. It's
+// built once and kept, so when the time steps the planets glide round
+// to their new places instead of jumping.
+const WHEEL = { svg: null, planets: {}, moon: null, lit: null, raf: 0 };
+const WS = 300, WC = WS / 2, WR = 136, WBAND = 20;
+const WHEEL_NS = "http://www.w3.org/2000/svg";
+const wheelPt = (lon, r) => { const a = Math.PI - lon * Math.PI / 180; return [WC + r * Math.cos(a), WC - r * Math.sin(a)]; };
+
+function svgEl(parent, tag, attrs = {}, txt) {
+  const e = document.createElementNS(WHEEL_NS, tag);
+  Object.entries(attrs).forEach(([a, v]) => e.setAttribute(a, v));
+  if (txt != null) e.textContent = txt;
+  parent.append(e);
+  return e;
+}
+
+function buildWheel() {
+  const svg = document.createElementNS(WHEEL_NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${WS} ${WS}`);
   svg.setAttribute("class", "sky-wheel");
   svg.setAttribute("role", "img");
   svg.setAttribute("aria-label", "Zodiac wheel");
-  const add = (tag, attrs, txt) => {
-    const e = document.createElementNS(NS, tag);
-    Object.entries(attrs).forEach(([a, v]) => e.setAttribute(a, v));
-    if (txt != null) e.textContent = txt;
-    svg.append(e);
-    return e;
-  };
-  const pt = (lon, r) => { const a = Math.PI - lon * Math.PI / 180; return [c + r * Math.cos(a), c - r * Math.sin(a)]; };
-  add("circle", { cx: c, cy: c, r: R, class: "w-line" });
-  add("circle", { cx: c, cy: c, r: R - band, class: "w-line" });
-  add("circle", { cx: c, cy: c, r: 46, class: "w-faint" });
+  const defs = svgEl(svg, "defs");
+  const glow = svgEl(defs, "filter", { id: "skyGlow", x: "-50%", y: "-50%", width: "200%", height: "200%" });
+  svgEl(glow, "feGaussianBlur", { stdDeviation: "2.2", result: "b" });
+  const merge = svgEl(glow, "feMerge");
+  svgEl(merge, "feMergeNode", { in: "b" });
+  svgEl(merge, "feMergeNode", { in: "SourceGraphic" });
+  const core = svgEl(defs, "radialGradient", { id: "skyCore" });
+  svgEl(core, "stop", { offset: "0", "stop-color": "#ffd682", "stop-opacity": ".2" });
+  svgEl(core, "stop", { offset: ".6", "stop-color": "#ffbe5a", "stop-opacity": ".06" });
+  svgEl(core, "stop", { offset: "1", "stop-color": "#ffbe5a", "stop-opacity": "0" });
+
+  // A slowly turning ring of gold dots outside the zodiac, like the runes of the summary.
+  const runes = svgEl(svg, "g", { class: "w-runes" });
+  for (let i = 0; i < 72; i++) {
+    const [x, y] = wheelPt(i * 5, WR + 8);
+    if (i % 6 === 0) svgEl(runes, "rect", { x: x - 2, y: y - 2, width: 4, height: 4, class: "w-diamond",
+      transform: `rotate(45 ${x} ${y})` });
+    else svgEl(runes, "circle", { cx: x, cy: y, r: i % 2 ? .7 : 1.1, class: "w-dot" });
+  }
+  svgEl(svg, "circle", { cx: WC, cy: WC, r: WR - WBAND, fill: "url(#skyCore)" });
+  svgEl(svg, "circle", { cx: WC, cy: WC, r: WR, class: "w-line w-draw", pathLength: 1 });
+  svgEl(svg, "circle", { cx: WC, cy: WC, r: WR - WBAND, class: "w-line w-draw", pathLength: 1 });
+  svgEl(svg, "circle", { cx: WC, cy: WC, r: 44, class: "w-faint w-draw", pathLength: 1 });
+  // A small tick every 10°, a line across the band where each sign begins.
+  for (let d = 0; d < 360; d += 10) {
+    const [x1, y1] = wheelPt(d, WR - WBAND), [x2, y2] = wheelPt(d, d % 30 ? WR - WBAND + 3 : WR);
+    svgEl(svg, "line", { x1, y1, x2, y2, class: d % 30 ? "w-faint" : "w-line" });
+  }
   SIGN_GLYPHS.forEach((g, i) => {
-    const [x1, y1] = pt(i * 30, R), [x2, y2] = pt(i * 30, R - band);
-    add("line", { x1, y1, x2, y2, class: "w-line" });
-    const [x, y] = pt(i * 30 + 15, R - band / 2);
-    add("text", { x, y, class: "w-sign" }, asText(g));
+    const [x, y] = wheelPt(i * 30 + 15, WR - WBAND / 2);
+    const t = svgEl(svg, "text", { x, y, class: "w-sign" }, asText(g));
+    t.style.animationDelay = `${i * 50}ms`;
   });
-  // Planets near each other step inwards so they don't overlap.
-  const placed = [];
-  [...bodies].sort((a, b) => a.lon - b.lon).forEach((p) => {
-    let ring = R - band - 18;
-    while (placed.some((q) => q.ring === ring && Math.abs(((q.lon - p.lon + 540) % 360) - 180) < 10)) ring -= 21;
-    placed.push({ lon: p.lon, ring });
-    const [x1, y1] = pt(p.lon, R - band), [x2, y2] = pt(p.lon, R - band - 5);
-    add("line", { x1, y1, x2, y2, class: "w-tick" });
-    const [x, y] = pt(p.lon, ring);
-    add("text", { x, y, class: `w-planet${p.retro ? " retro" : ""}` }, asText(GLYPHS[p.body]));
+  const planets = svgEl(svg, "g", { filter: "url(#skyGlow)" });
+  SKY_BODIES.forEach((body) => {
+    const tick = svgEl(planets, "line", { class: "w-tick" });
+    const glyph = svgEl(planets, "text", { class: "w-planet" }, asText(GLYPHS[body]));
+    WHEEL.planets[body] = { tick, glyph, lon: null, ring: 0 };
   });
-  add("text", { x: c, y: c - 6, class: "w-moon" }, moon.icon);
-  add("text", { x: c, y: c + 18, class: "w-lit" }, `${moon.lit}% lit`);
-  return svg;
+  WHEEL.moon = svgEl(svg, "text", { x: WC, y: WC - 6, class: "w-moon" });
+  WHEEL.lit = svgEl(svg, "text", { x: WC, y: WC + 19, class: "w-lit" });
+  WHEEL.svg = svg;
 }
 
+function placePlanet(p, lon, ring, alpha = 1) {
+  const [x, y] = wheelPt(lon, ring);
+  p.glyph.setAttribute("x", x);
+  p.glyph.setAttribute("y", y);
+  p.glyph.style.opacity = alpha;
+  const [x1, y1] = wheelPt(lon, WR - WBAND), [x2, y2] = wheelPt(lon, WR - WBAND - 6);
+  Object.entries({ x1, y1, x2, y2 }).forEach(([a, v]) => p.tick.setAttribute(a, v));
+  p.tick.style.opacity = alpha;
+}
+
+// Moves the planets to this moment's places: they sweep in from the
+// centre when the wheel opens, and glide the short way round after that.
+function updateWheel(bodies, moon, opening) {
+  const placed = [];
+  const targets = [...bodies].sort((a, b) => a.lon - b.lon).map((b) => {
+    let ring = WR - WBAND - 17;   // planets near each other step inwards
+    while (placed.some((q) => q.ring === ring && Math.abs(((q.lon - b.lon + 540) % 360) - 180) < 10)) ring -= 20;
+    placed.push({ lon: b.lon, ring });
+    const p = WHEEL.planets[b.body];
+    p.glyph.classList.toggle("retro", b.retro);
+    let from = p.lon == null || opening ? b.lon - 140 : p.lon;
+    let to = from + ((((b.lon - from) % 360) + 540) % 360) - 180;
+    const fromRing = p.lon == null || opening ? 8 : p.ring;
+    return { p, from, to, fromRing, ring, fade: p.lon == null || opening };
+  });
+  WHEEL.moon.textContent = moon.icon;
+  WHEEL.lit.textContent = `${moon.lit}% lit`;
+  cancelAnimationFrame(WHEEL.raf);
+  const done = () => targets.forEach((t) => { t.p.lon = t.to; t.p.ring = t.ring; placePlanet(t.p, t.to, t.ring); });
+  if (calm) { done(); return; }
+  const start = performance.now(), dur = opening ? 1400 : 900;
+  const ease = (k) => 1 - Math.pow(1 - k, 3);
+  WHEEL.raf = requestAnimationFrame(function frame(now) {
+    targets.forEach((t, i) => {
+      const delay = opening ? i * 45 : 0;
+      const k = ease(Math.min(1, Math.max(0, (now - start - delay) / dur)));
+      placePlanet(t.p, t.from + (t.to - t.from) * k, t.fromRing + (t.ring - t.fromRing) * k, t.fade ? k : 1);
+    });
+    if (now - start < dur + targets.length * 45) WHEEL.raf = requestAnimationFrame(frame);
+    else done();
+  });
+}
+
+// The sheet's own night sky, like the home screen's.
+const skySheetShown = () => !$("skySheet").hidden && !document.hidden;
+const skyField = makeStarfield($("skyStars"), skySheetShown);
+
 const SKY_UNITS = ["Hour", "Day", "Week", "Month", "Year"];
-const SKY = { at: null, unit: "Day" };   // at: null means now
+const SKY = { at: null, unit: "Day", shown: {} };   // at: null means now
 
 function skyStep(dir) {
   const d = new Date(SKY.at || Date.now());
@@ -4811,7 +4888,7 @@ function skyStep(dir) {
   renderSky();
 }
 
-function renderSky() {
+function renderSky(opening = false) {
   const box = $("skyBody");
   box.innerHTML = "";
   if (typeof Astronomy === "undefined") {
@@ -4820,7 +4897,9 @@ function renderSky() {
   }
   const date = SKY.at || new Date();
   const { bodies, moon } = skyAt(date);
+  box.classList.toggle("entering", opening && !calm);
 
+  const ornament = () => { const l = el("div", "rpg-line sky-orn"); l.append(el("i"), el("b"), el("i")); return l; };
   const when = el("p", "sky-when");
   when.append(el("span", "", `${date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })} · ${timeText(date)}`));
   if (SKY.at) {
@@ -4828,7 +4907,7 @@ function renderSky() {
     now.addEventListener("click", () => { SKY.at = null; renderSky(); });
     when.append(now);
   }
-  box.append(when);
+  box.append(ornament(), when);
 
   // ‹ Hour Day Week Month Year ›
   const steps = el("div", "sky-steps");
@@ -4839,7 +4918,7 @@ function renderSky() {
   fwd.addEventListener("click", () => skyStep(1));
   const units = el("div", "sky-units");
   SKY_UNITS.forEach((u) => {
-    const b = el("button", `sky-unit${u === SKY.unit ? " on" : ""}`, u);
+    const b = el("button", `chip sky-unit${u === SKY.unit ? " on" : ""}`, u);
     b.addEventListener("click", () => { SKY.unit = u; renderSky(); });
     units.append(b);
   });
@@ -4850,37 +4929,57 @@ function renderSky() {
   const lunation = el("div", "sky-moon");
   lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${moonSign}`),
     el("span", "sky-moon-note", `${moon.lit}% lit · day ${moon.day} of 29`));
-  // On a wide screen the wheel sits beside the list; on a phone above it.
-  const cols = el("div", "sky-cols"), side = el("div", "sky-side");
-  cols.append(skyWheel(bodies, moon), side);
-  box.append(cols);
+  flashIfChanged(lunation, "moon", lunation.textContent, opening);
 
+  // On a wide screen the wheel sits beside the list; on a phone above it.
+  if (!WHEEL.svg) buildWheel();
+  WHEEL.svg.classList.toggle("drawing", opening && !calm);
+  const cols = el("div", "sky-cols"), side = el("div", "sky-side");
+  cols.append(WHEEL.svg, side);
+  box.append(cols);
+  WHEEL.svg.getBoundingClientRect();   // settle it in its new place before it moves
+  updateWheel(bodies, moon, opening);
+
+  // Two columns, read down: Sun to Jupiter, then Saturn to Chiron and the ℞ key.
   const list = el("div", "sky-list");
-  // Two columns, read down: Sun to Mars, then Jupiter to Chiron and the ℞ key.
-  bodies.forEach((p) => {
+  bodies.forEach((p, i) => {
     const row = el("div", "sky-row");
+    row.style.setProperty("--i", i);
     const info = el("span", "sky-info");
     const where = el("span", "sky-where", `${SIGNS[p.sign]} ${p.deg}°`);
     if (p.retro) where.append(el("span", "sky-rx", " ℞"));
     info.append(el("span", "sky-name", p.body), where, el("small", "sky-rule", RULES[p.body]));
     row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), info);
+    flashIfChanged(row, p.body, where.textContent, opening);
     list.append(row);
   });
   const key = el("div", "sky-row sky-key");
+  key.style.setProperty("--i", bodies.length);
   key.append(el("span", "sky-rx", "℞"), el("span", "", "retrograde: seems to move backwards, a time to look back"));
   list.append(key);
   side.append(lunation, list);
 }
 
+// A soft gold glow on whatever changed since the last step.
+function flashIfChanged(node, key, value, opening) {
+  if (!opening && !calm && SKY.shown[key] != null && SKY.shown[key] !== value) node.classList.add("changed");
+  SKY.shown[key] = value;
+}
+
 $("skyBtn").addEventListener("click", () => {
   SKY.at = null;
-  renderSky();
+  SKY.shown = {};
+  renderSky(true);
   slideIn($("skySheet"));
+  skyField.size();
+  skyField.start();
 });
 $("skyBack").addEventListener("click", async () => {
   await slideOut($("skySheet"));
   $("skySheet").hidden = true;
 });
+addEventListener("resize", () => { if (skySheetShown()) { skyField.size(); if (calm) skyField.draw(0); } });
+document.addEventListener("visibilitychange", () => skyField.start());
 
 // ── 6. Your history ─────────────────────────────────────
 
