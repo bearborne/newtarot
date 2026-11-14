@@ -1715,20 +1715,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sky-side { display: contents; }
 .sky-cols .sky-moon { order: -1; }
 @media (min-width: 900px) {
-  /* The wheel is as tall as the screen allows; the list stretches to match it. */
+  /* The wheel is as tall as the screen allows. The tiles beside it are only
+     as wide as their longest line, so each one is snug around its text. */
   #skySheet .sky-body { max-width: 1200px; }
-  .sky-cols { display: grid; grid-template-columns: auto minmax(340px, 460px); justify-content: center;
-    gap: 56px; align-items: stretch; margin-top: 4px; }
+  .sky-cols { display: grid; grid-template-columns: auto auto; justify-content: center;
+    gap: 56px; align-items: center; margin-top: 4px; }
   .sky-wheel { width: min(660px, calc(100vh - 190px), 52vw); max-width: none; margin: 0; }
-  .sky-side { display: flex; flex-direction: column; }
-  .sky-side .sky-moon { margin-bottom: 10px; padding: 10px; }
+  .sky-side { display: block; width: max-content; }
+  .sky-side .sky-moon { width: 0; min-width: 100%; margin-bottom: 10px; padding: 10px 12px; }   /* follows the tiles' width */
   .sky-moon-main { font-size: 1.15rem; }
   .sky-moon-note { font-size: .8rem; }
-  .sky-side .sky-list { flex: 1; margin: 0; grid-template-rows: repeat(6, 1fr); gap: 8px; }
-  /* Here each tile has a set size, so its text fills both its width and height. */
-  .sky-row { container-type: size; padding: 4px 4% 4px 7%; }
-  .sky-row .sky-glyph { font-size: min(18cqi, 52cqh); }
-  .sky-row .sky-name { font-size: min(8.5cqi, 20cqh); }
-  .sky-row .sky-where { font-size: min(13cqi, 32cqh); }
-  .sky-row .sky-rule { font-size: min(7.5cqi, 17cqh); }
+  .sky-side .sky-list { margin: 0; gap: 8px; grid-template-columns: max-content max-content; }
+  .sky-row { container-type: normal; gap: 12px; padding: 9px 16px 9px 14px; }
+  .sky-row .sky-glyph { font-size: 2rem; }
+  .sky-row .sky-name { font-size: .95rem; }
+  .sky-row .sky-where { font-size: 1.4rem; }
+  .sky-row .sky-rule { font-size: .8rem; }
+}
 }
