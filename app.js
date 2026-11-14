@@ -4940,7 +4940,7 @@ function renderSky(opening = false) {
   WHEEL.svg.getBoundingClientRect();   // settle it in its new place before it moves
   updateWheel(bodies, moon, opening);
 
-  // Two columns, read down: Sun to Jupiter, then Saturn to Chiron and the ℞ key.
+  // Two columns, read down: Sun to Jupiter, then Saturn to Chiron.
   const list = el("div", "sky-list");
   bodies.forEach((p, i) => {
     const row = el("div", "sky-row");
@@ -4953,10 +4953,6 @@ function renderSky(opening = false) {
     flashIfChanged(row, p.body, where.textContent, opening);
     list.append(row);
   });
-  const key = el("div", "sky-row sky-key");
-  key.style.setProperty("--i", bodies.length);
-  key.append(el("span", "sky-glyph sky-rx", "℞"), el("span", "", "retrograde: seems to move backwards, a time to look back"));
-  list.append(key);
   side.append(lunation, list);
   // Every sign shows at one size: if the longest doesn't fit its tile, they all shrink together.
   fitOneLine([...list.querySelectorAll(".sky-where")]);
