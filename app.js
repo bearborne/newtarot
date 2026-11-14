@@ -4850,7 +4850,10 @@ function renderSky() {
   const lunation = el("div", "sky-moon");
   lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${moonSign}`),
     el("span", "sky-moon-note", `${moon.lit}% lit · day ${moon.day} of 29`));
-  box.append(lunation, skyWheel(bodies, moon));
+  // On a wide screen the wheel sits beside the list; on a phone above it.
+  const cols = el("div", "sky-cols"), side = el("div", "sky-side");
+  cols.append(skyWheel(bodies, moon), side);
+  box.append(cols);
 
   const list = el("div", "sky-list");
   bodies.forEach((p) => {
@@ -4862,7 +4865,7 @@ function renderSky() {
     row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), name, where);
     list.append(row);
   });
-  box.append(list, el("p", "tile-legend sky-legend", "℞ retrograde: seems to move backwards, a time to look back"));
+  side.append(lunation, list, el("p", "tile-legend sky-legend", "℞ retrograde: seems to move backwards, a time to look back"));
 }
 
 $("skyBtn").addEventListener("click", () => {

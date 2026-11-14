@@ -1639,3 +1639,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sky-where { font-size: .93rem; white-space: nowrap; }
 .sky-rx { color: #d0907e; font-size: .85em; }
 .sky-legend { text-align: center; }
+/* Phone: Moon bar, wheel, list, one under the other. Wide screen: the
+   wheel, larger, on the left; the Moon bar and list on the right. */
+.sky-cols { display: flex; flex-direction: column; }
+.sky-side { display: contents; }
+.sky-cols .sky-moon { order: -1; }
+@media (min-width: 900px) {
+  #skySheet .sky-body { max-width: 60rem; }
+  .sky-cols { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: center; }
+  .sky-side { display: block; }
+  .sky-wheel { max-width: 520px; margin: 0 auto; }
+  .sky-side .sky-moon { margin-bottom: 10px; }
+  .sky-side .sky-list { max-width: none; }
+}
