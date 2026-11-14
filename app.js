@@ -4856,16 +4856,20 @@ function renderSky() {
   box.append(cols);
 
   const list = el("div", "sky-list");
+  // Two columns, read down: Sun to Mars, then Jupiter to Chiron and the ℞ key.
   bodies.forEach((p) => {
     const row = el("div", "sky-row");
-    const name = el("span", "sky-name", p.body);
-    name.append(el("small", "", RULES[p.body]));
+    const info = el("span", "sky-info");
     const where = el("span", "sky-where", `${SIGNS[p.sign]} ${p.deg}°`);
     if (p.retro) where.append(el("span", "sky-rx", " ℞"));
-    row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), name, where);
+    info.append(el("span", "sky-name", p.body), where, el("small", "sky-rule", RULES[p.body]));
+    row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), info);
     list.append(row);
   });
-  side.append(lunation, list, el("p", "tile-legend sky-legend", "℞ retrograde: seems to move backwards, a time to look back"));
+  const key = el("div", "sky-row sky-key");
+  key.append(el("span", "sky-rx", "℞"), el("span", "", "retrograde: seems to move backwards, a time to look back"));
+  list.append(key);
+  side.append(lunation, list);
 }
 
 $("skyBtn").addEventListener("click", () => {
