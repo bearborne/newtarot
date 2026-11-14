@@ -1601,9 +1601,41 @@ button { font: inherit; color: inherit; cursor: pointer; }
 @media (min-width: 900px) { .summary-page .tile-pips { font-size: .7rem; } }
 
 /* ── Sky now ── */
-.sky-when { margin: 4px 0 12px; text-align: center; color: var(--muted); font-size: .9rem; }
-.sky-body .asks-title { margin-top: 18px; }
-.sky-tiles .tile { font: inherit; color: inherit; cursor: pointer; padding: 8px 4px; }
-.sky-tiles .tile-top { font-size: .66rem; }
-@media (hover: hover) { .sky-tiles .tile:hover { background: rgba(201, 169, 110, .1); } }
 .sky-link { margin-top: 14px; font-size: 1rem; }
+.sky-body { max-width: 22rem; }
+.sky-when { display: flex; justify-content: center; align-items: baseline; gap: 10px; margin: 2px 0 8px;
+  color: var(--muted); font-size: .9rem; }
+.sky-now { padding: 0; }
+.sky-steps { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
+.sky-arrow { width: 34px; height: 30px; padding: 0; border: 1px solid rgba(201, 169, 110, .5); border-radius: 999px;
+  background: none; color: var(--gold); font-size: 1.2rem; line-height: 1; }
+.sky-arrow:active { background: rgba(201, 169, 110, .15); }
+.sky-units { display: flex; border: 1px solid rgba(201, 169, 110, .3); border-radius: 999px; overflow: hidden; }
+.sky-unit { padding: 6px 9px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .8rem; }
+.sky-unit.on { background: rgba(201, 169, 110, .18); color: var(--gold); }
+.sky-moon { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 8px;
+  border: 1px solid rgba(201, 169, 110, .2); border-radius: 10px; background: rgba(201, 169, 110, .035); text-align: center; }
+.sky-moon-main { font-size: .95rem; }
+.sky-moon-note { font-family: var(--read); font-size: .72rem; color: var(--muted); }
+.sky-wheel { display: block; width: 100%; max-width: 300px; margin: 10px auto 8px; }
+.sky-wheel text { text-anchor: middle; dominant-baseline: central;
+  font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "Noto Sans Symbols 2", sans-serif; }
+.sky-wheel .w-line { fill: none; stroke: rgba(201, 169, 110, .4); }
+.sky-wheel .w-faint { fill: none; stroke: rgba(201, 169, 110, .15); }
+.sky-wheel .w-tick { stroke: var(--ink); }
+.sky-wheel .w-sign { font-size: 12px; fill: var(--gold); }
+.sky-wheel .w-planet { font-size: 17px; fill: var(--ink); }
+.sky-wheel .w-planet.retro { fill: #d0907e; }
+.sky-wheel .w-moon { font-size: 22px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.sky-wheel .w-lit { font-size: 11px; fill: var(--muted); font-family: var(--serif); }
+.sky-list { max-width: 300px; margin: 0 auto; border: 1px solid rgba(201, 169, 110, .2); border-radius: 10px; }
+.sky-row { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 5px 10px;
+  border-top: 1px solid rgba(201, 169, 110, .2); }
+.sky-row:first-child { border-top: 0; }
+.sky-glyph { text-align: center; color: var(--gold); font-size: 1.05rem;
+  font-family: "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "Noto Sans Symbols 2", sans-serif; }
+.sky-name { font-size: .93rem; line-height: 1.2; }
+.sky-name small { display: block; font-family: var(--read); font-size: .68rem; color: var(--muted); }
+.sky-where { font-size: .93rem; white-space: nowrap; }
+.sky-rx { color: #d0907e; font-size: .85em; }
+.sky-legend { text-align: center; }

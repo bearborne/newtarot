@@ -4689,50 +4689,126 @@ $("browseBack").addEventListener("click", async () => {
   browse.hidden = true;
 });
 
-// ── Sky now: where the planets are this moment ─────────
+// ── Sky now: where the planets are, at any moment ──────
 // Worked out on the phone with astronomy.js, no internet needed.
-// Each planet links to three cards: its own Major card, the Major card
-// of the sign it's in, and the Minor card of that sign's ten degrees.
+// The arrows step the time back and forward by the chosen unit.
 
+const SKY_BODIES = [...PLANETS, "Chiron"];
 const GLYPHS = { Sun: "☉", Moon: "☽", Mercury: "☿", Venus: "♀", Mars: "♂", Jupiter: "♃",
-  Saturn: "♄", Uranus: "♅", Neptune: "♆", Pluto: "♇" };
+  Saturn: "♄", Uranus: "♅", Neptune: "♆", Pluto: "♇", Chiron: "⚷" };
+const SIGN_GLYPHS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
+const RULES = { Sun: "you, your energy", Moon: "feelings", Mercury: "thinking, talk", Venus: "love, beauty",
+  Mars: "drive, action", Jupiter: "luck, growth", Saturn: "rules, lessons", Uranus: "sudden change",
+  Neptune: "dreams", Pluto: "deep change", Chiron: "old wounds, healing" };
 const MOON_PHASES = ["New Moon", "Waxing crescent", "First quarter", "Waxing gibbous",
   "Full Moon", "Waning gibbous", "Last quarter", "Waning crescent"];
-const CARD_NUMBERS = ["", "Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
-const SIGN_SUITS = ["Wands", "Pentacles", "Swords", "Cups"];   // Fire, Earth, Air, Water, in sign order
+const MOON_ICONS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+const asText = (g) => g + "︎";   // a symbol, not a coloured emoji
 
-const cardNamed = (name) => CARDS.find((c) => c.name === name);
-const cardOfStar = (star) => CARDS.slice(0, 22).find((c) => (c.correspondences || {}).astrology === star);
+// Chiron isn't in astronomy.js, so it's carried along its orbit from where
+// NASA JPL's Horizons put it on 14 Nov 2026 (sun-centred, AU and AU/day),
+// pulled by the Sun and the big planets.
+const CHIRON_START = { jd: 2461358.5, pos: [16.02937033801500, 7.935677029286289, 3.478569887691327],
+  vel: [-2.092831639279892e-3, 2.461004462594767e-3, 6.407684802227911e-4] };
+const CHIRON_STEP = 10;   // days per step of the simulation
+let chironSim = null;
 
-// The Minor card ruling these ten degrees: Aries 0–10° is the Two of Wands,
-// 10–20° the Three, 20–30° the Four; Taurus starts the Five of Pentacles…
-function decanCard(sign, deg) {
-  const n = 2 + (sign % 3) * 3 + Math.min(2, Math.floor(deg / 10));
-  return cardNamed(`${CARD_NUMBERS[n]} of ${SIGN_SUITS[sign % 4]}`);
+function chironHelio(date) {
+  const target = Astronomy.MakeTime(date);
+  const t0 = Astronomy.MakeTime(new Date((CHIRON_START.jd - 2440587.5) * 864e5));
+  // Start again from Horizons' date if that's nearer than where the last run stopped.
+  if (!chironSim || Math.abs(target.tt - t0.tt) < Math.abs(target.tt - chironSim.Time.tt)) {
+    const [x, y, z] = CHIRON_START.pos, [vx, vy, vz] = CHIRON_START.vel;
+    chironSim = new Astronomy.GravitySimulator(Astronomy.Body.Sun, t0,
+      [new Astronomy.StateVector(x, y, z, vx, vy, vz, t0)]);
+  }
+  while (Math.abs(target.tt - chironSim.Time.tt) > CHIRON_STEP) {
+    const dir = Math.sign(target.tt - chironSim.Time.tt);
+    chironSim.Update(chironSim.Time.AddDays(dir * CHIRON_STEP));
+  }
+  return chironSim.Update(target)[0];
 }
 
 function eclipticLon(body, date) {
   if (body === "Sun") return Astronomy.SunPosition(date).elon;
   if (body === "Moon") return Astronomy.EclipticGeoMoon(date).lon;
+  if (body === "Chiron") {
+    const c = chironHelio(date), e = Astronomy.HelioVector(Astronomy.Body.Earth, date);
+    return Astronomy.Ecliptic(new Astronomy.Vector(c.x - e.x, c.y - e.y, c.z - e.z, e.t)).elon;
+  }
   return Astronomy.Ecliptic(Astronomy.GeoVector(body, date, true)).elon;
 }
 
-function skyNow(date = new Date()) {
+function skyAt(date) {
   const later = new Date(date.getTime() + 3600e3);
-  const planets = PLANETS.map((body) => {
+  const bodies = SKY_BODIES.map((body) => {
     const lon = eclipticLon(body, date);
     // Retrograde: the planet seems to slip backwards along the zodiac.
     const step = ((eclipticLon(body, later) - lon + 540) % 360) - 180;
-    const sign = Math.floor(lon / 30), deg = lon % 30;
-    return { body, sign, deg, retro: step < 0 && body !== "Sun" && body !== "Moon" };
+    return { body, lon, sign: Math.floor(lon / 30), deg: Math.floor(lon % 30),
+      retro: step < 0 && body !== "Sun" && body !== "Moon" };
   });
   const angle = Astronomy.MoonPhase(date);
-  const moon = {
-    name: MOON_PHASES[Math.round(angle / 45) % 8],
+  const k = Math.round(angle / 45) % 8;
+  const moon = { name: MOON_PHASES[k], icon: MOON_ICONS[k],
     lit: Math.round(Astronomy.Illumination("Moon", date).phase_fraction * 100),
-    day: Math.floor(angle / 360 * 29.53) + 1,
+    day: Math.floor(angle / 360 * 29.53) + 1 };
+  return { bodies, moon };
+}
+
+// The zodiac wheel: Aries on the left, going round anticlockwise.
+function skyWheel(bodies, moon) {
+  const NS = "http://www.w3.org/2000/svg", S = 300, c = S / 2, R = 146, band = 20;
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${S} ${S}`);
+  svg.setAttribute("class", "sky-wheel");
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", "Zodiac wheel");
+  const add = (tag, attrs, txt) => {
+    const e = document.createElementNS(NS, tag);
+    Object.entries(attrs).forEach(([a, v]) => e.setAttribute(a, v));
+    if (txt != null) e.textContent = txt;
+    svg.append(e);
+    return e;
   };
-  return { date, planets, moon };
+  const pt = (lon, r) => { const a = Math.PI - lon * Math.PI / 180; return [c + r * Math.cos(a), c - r * Math.sin(a)]; };
+  add("circle", { cx: c, cy: c, r: R, class: "w-line" });
+  add("circle", { cx: c, cy: c, r: R - band, class: "w-line" });
+  add("circle", { cx: c, cy: c, r: 46, class: "w-faint" });
+  SIGN_GLYPHS.forEach((g, i) => {
+    const [x1, y1] = pt(i * 30, R), [x2, y2] = pt(i * 30, R - band);
+    add("line", { x1, y1, x2, y2, class: "w-line" });
+    const [x, y] = pt(i * 30 + 15, R - band / 2);
+    add("text", { x, y, class: "w-sign" }, asText(g));
+  });
+  // Planets near each other step inwards so they don't overlap.
+  const placed = [];
+  [...bodies].sort((a, b) => a.lon - b.lon).forEach((p) => {
+    let ring = R - band - 18;
+    while (placed.some((q) => q.ring === ring && Math.abs(((q.lon - p.lon + 540) % 360) - 180) < 10)) ring -= 21;
+    placed.push({ lon: p.lon, ring });
+    const [x1, y1] = pt(p.lon, R - band), [x2, y2] = pt(p.lon, R - band - 5);
+    add("line", { x1, y1, x2, y2, class: "w-tick" });
+    const [x, y] = pt(p.lon, ring);
+    add("text", { x, y, class: `w-planet${p.retro ? " retro" : ""}` }, asText(GLYPHS[p.body]));
+  });
+  add("text", { x: c, y: c - 6, class: "w-moon" }, moon.icon);
+  add("text", { x: c, y: c + 18, class: "w-lit" }, `${moon.lit}% lit`);
+  return svg;
+}
+
+const SKY_UNITS = ["Hour", "Day", "Week", "Month", "Year"];
+const SKY = { at: null, unit: "Day" };   // at: null means now
+
+function skyStep(dir) {
+  const d = new Date(SKY.at || Date.now());
+  if (SKY.unit === "Hour") d.setHours(d.getHours() + dir);
+  if (SKY.unit === "Day") d.setDate(d.getDate() + dir);
+  if (SKY.unit === "Week") d.setDate(d.getDate() + 7 * dir);
+  if (SKY.unit === "Month") d.setMonth(d.getMonth() + dir);
+  if (SKY.unit === "Year") d.setFullYear(d.getFullYear() + dir);
+  SKY.at = d;
+  renderSky();
 }
 
 function renderSky() {
@@ -4742,41 +4818,55 @@ function renderSky() {
     box.append(el("p", "empty-note", "The sky couldn't be worked out on this device."));
     return;
   }
-  const { date, planets, moon } = skyNow();
-  box.append(el("p", "sky-when", `${dateText(date)} · ${timeText(date)}`));
+  const date = SKY.at || new Date();
+  const { bodies, moon } = skyAt(date);
 
-  const moonTiles = el("div", "tiles");
-  moonTiles.style.setProperty("--per", 1);
-  const mt = el("div", "tile");
-  mt.append(el("span", "tile-top", "Moon phase"), el("span", "tile-main", moon.name),
-    el("span", "tile-note", `${moon.lit}% lit · day ${moon.day} of 29`));
-  moonTiles.append(mt);
-  box.append(moonTiles);
+  const when = el("p", "sky-when");
+  when.append(el("span", "", `${date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })} · ${timeText(date)}`));
+  if (SKY.at) {
+    const now = el("button", "link small gold sky-now", "Now");
+    now.addEventListener("click", () => { SKY.at = null; renderSky(); });
+    when.append(now);
+  }
+  box.append(when);
 
-  const grid = el("div", "tiles sky-tiles");
-  grid.style.setProperty("--per", 2);
-  planets.forEach((p) => {
-    const sign = SIGNS[p.sign];
-    const cards = [
-      { card: cardOfStar(p.body), label: p.body },
-      { card: cardOfStar(sign), label: sign },
-      { card: decanCard(p.sign, p.deg), label: `${sign} ${Math.floor(p.deg)}°` },
-    ].filter((x) => x.card);
-    const tile = el("button", "tile");
-    tile.append(
-      el("span", "tile-top", `${GLYPHS[p.body]}︎ ${p.body}`),
-      el("span", "tile-main", `${sign} ${Math.floor(p.deg)}°${p.retro ? " ℞" : ""}`),
-      ...cards.slice(1).map((x) => el("span", "tile-note", x.card.name)));
-    tile.setAttribute("aria-label", `${p.body} in ${sign}, ${Math.floor(p.deg)} degrees${p.retro ? ", retrograde" : ""}`);
-    tile.addEventListener("click", () =>
-      openDetails(cards.map((x) => detailsItem(x.card, false, x.label))));
-    grid.append(tile);
+  // ‹ Hour Day Week Month Year ›
+  const steps = el("div", "sky-steps");
+  const back = el("button", "sky-arrow", "‹"), fwd = el("button", "sky-arrow", "›");
+  back.setAttribute("aria-label", `Back one ${SKY.unit.toLowerCase()}`);
+  fwd.setAttribute("aria-label", `Forward one ${SKY.unit.toLowerCase()}`);
+  back.addEventListener("click", () => skyStep(-1));
+  fwd.addEventListener("click", () => skyStep(1));
+  const units = el("div", "sky-units");
+  SKY_UNITS.forEach((u) => {
+    const b = el("button", `sky-unit${u === SKY.unit ? " on" : ""}`, u);
+    b.addEventListener("click", () => { SKY.unit = u; renderSky(); });
+    units.append(b);
   });
-  box.append(el("p", "asks-title", "Planets"), grid);
-  box.append(el("p", "tile-legend", "Tap a planet for its cards. ℞ retrograde."));
+  steps.append(back, units, fwd);
+  box.append(steps);
+
+  const moonSign = SIGNS[bodies[1].sign];
+  const lunation = el("div", "sky-moon");
+  lunation.append(el("span", "sky-moon-main", `${moon.icon} ${moon.name} · Moon in ${moonSign}`),
+    el("span", "sky-moon-note", `${moon.lit}% lit · day ${moon.day} of 29`));
+  box.append(lunation, skyWheel(bodies, moon));
+
+  const list = el("div", "sky-list");
+  bodies.forEach((p) => {
+    const row = el("div", "sky-row");
+    const name = el("span", "sky-name", p.body);
+    name.append(el("small", "", RULES[p.body]));
+    const where = el("span", "sky-where", `${SIGNS[p.sign]} ${p.deg}°`);
+    if (p.retro) where.append(el("span", "sky-rx", " ℞"));
+    row.append(el("span", "sky-glyph", asText(GLYPHS[p.body])), name, where);
+    list.append(row);
+  });
+  box.append(list, el("p", "tile-legend sky-legend", "℞ retrograde: seems to move backwards, a time to look back"));
 }
 
 $("skyBtn").addEventListener("click", () => {
+  SKY.at = null;
   renderSky();
   slideIn($("skySheet"));
 });
