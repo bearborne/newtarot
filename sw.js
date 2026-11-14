@@ -2,7 +2,7 @@
 // It always tries the internet first, so your changes show up,
 // and falls back to the saved copy when there is no connection.
 
-const CACHE = "tarot-v10";
+const CACHE = "tarot-v11";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(self.clients.claim()));

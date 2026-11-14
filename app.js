@@ -4828,7 +4828,7 @@ function buildWheel() {
     t.style.animationDelay = `${i * 50}ms`;
     WHEEL.signs[i] = { seg, glyph: t };
   });
-  const planets = svgEl(svg, "g", { filter: "url(#skyGlow)" });
+  const planets = svgEl(svg, "g");
   SKY_BODIES.forEach((body) => {
     const tick = svgEl(planets, "line", { class: "w-tick" });
     const glyph = svgEl(planets, "text", { class: "w-planet" }, asText(GLYPHS[body]));
